@@ -67,25 +67,27 @@ class ShearProfileClassificationAnalyser(Analyser):
     single_file = True
 
     def run_analysis(self):
-        u = get_cube(self.cubes, 30, 201)
-        v = get_cube(self.cubes, 30, 202)
+        self.u = get_cube(self.cubes, 30, 201)
+        self.v = get_cube(self.cubes, 30, 202)
 
         kwargs = {'lat_slice': TROPICS_SLICE}
-        X = gen_feature_matrix(u, v, **kwargs)
-        X_new, pca, n_pca_components = calc_pca(X)
+        self.X = gen_feature_matrix(self.u, self.v, **kwargs)
+        self.X_new, pca, n_pca_components = calc_pca(X)
+
 
         self.disp_res = {}
         for n_clusters in range(2, MAX_N_CLUSTERS):
             logger.info('Running for n_clusters = {}'.format(n_clusters))
             # Calculates kmeans based on reduced (first 2) components of PCA.
             kmeans_red = KMeans(n_clusters=n_clusters, random_state=0) \
-                .fit(X_new[:, :n_pca_components])
-            # TODO: Not quite right.
+                .fit(self.X_new[:, :n_pca_components])
+            # TODO: Not quite right. I need to change so that the number of bins is
+            # one more than the number of labels, but so that the bins are aligned with the labels.
             logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
 
-            self.disp_res[n_clusters] = (X_new, n_pca_components, n_clusters, kmeans_red)
+            self.disp_res[n_clusters] = (n_pca_components, n_clusters, kmeans_red)
 
-    def plot_results(self, X_new, n_pca_components, n_clusters, kmeans_red):
+    def plot_cluster_results(self, n_pca_components, n_clusters, kmeans_red):
         # Loop over all axes of PCA.
         for i in range(1, n_pca_components):
             for j in range(i):
@@ -96,17 +98,41 @@ class ShearProfileClassificationAnalyser(Analyser):
                 plt.title(title)
 
                 # Plot each cluster in a differnt colour.
-                for cluster_index in range(n_clusters):
-                    vs = X_new[kmeans_red.labels_ == cluster_index, :n_pca_components]
-                    c = COLOURS[cluster_index]
+                #for cluster_index in range(n_clusters):
+                #    vs = X_new[kmeans_red.labels_ == cluster_index, :n_pca_components]
+                #    c = COLOURS[cluster_index]
 
-                    plt.scatter(vs[:, i], vs[:, j], c=c)
+                #    plt.scatter(vs[:, i], vs[:, j], c=c)
+                plt.scatter(self.X_new[:, i], self.X_new[:, j], c=kmeans_red.labels_)
 
                 plt.savefig(self.figpath(title) + '.png')
 
         plt.close("all")
 
+    def plot_profile_results(self, n_pca_components, n_clusters, kmeans_red):
+        pressure = self.u.coord('pressure').points
+
+        for cluster_index in range(n_clusters):
+            title = 'profile-{}_n_clust-{}_ci-{}'.format(n_pca_components,
+                                                         n_clusters,
+                                                         cluster_index)
+            plt.figure(title)
+            plt.clf()
+            plt.title(title)
+
+            # Get original samples based on how they've been classified.
+            vs = self.X[kmeans_red.labels_ == cluster_index]
+            us = vs[:, :6]
+            vs = vs[:, 6:]
+            for u, v in zip(us, vs):
+                plt.plot(u, pressure, 'b')
+                plt.plot(v, pressure, 'r')
+
+            plt.savefig(self.figpath(title) + '.png')
+        plt.close("all")
+
     def display_results(self):
         for n_clusters in range(2, MAX_N_CLUSTERS):
             res = self.disp_res[n_clusters]
-            self.plot_results(*res)
+            self.plot_cluster_results(*res)
+            self.plot_profile_results(*res)
