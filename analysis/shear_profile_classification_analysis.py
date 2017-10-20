@@ -72,8 +72,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         kwargs = {'lat_slice': TROPICS_SLICE}
         self.X = gen_feature_matrix(self.u, self.v, **kwargs)
-        self.X_new, pca, n_pca_components = calc_pca(X)
-
+        self.X_new, pca, n_pca_components = calc_pca(self.X)
 
         self.disp_res = {}
         for n_clusters in range(2, MAX_N_CLUSTERS):
