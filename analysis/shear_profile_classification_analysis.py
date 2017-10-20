@@ -1,4 +1,8 @@
+from logging import getLogger
+
 from omnium.analyser import Analyser
+
+logger = getLogger('cosar.spca')
 
 
 class ShearProfileClassificationAnalyser(Analyser):
@@ -6,4 +10,4 @@ class ShearProfileClassificationAnalyser(Analyser):
     single_file = True
 
     def run_analysis(self):
-        pass
+        logger.info('Running shear profile classifcation analysis')
