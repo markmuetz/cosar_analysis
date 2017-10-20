@@ -71,7 +71,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         v = get_cube(self.cubes, 30, 202)
 
         kwargs = {'lat_slice': TROPICS_SLICE}
-        X = gen_feature_matrix(u, v, kwargs)
+        X = gen_feature_matrix(u, v, **kwargs)
         X_new, pca, n_pca_components = calc_pca(X)
 
         self.disp_res = {}
