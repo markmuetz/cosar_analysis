@@ -18,7 +18,7 @@ TEST_FEATURE_GEN = False
 TROPICS_SLICE = slice(48, 97)
 MAX_N_CLUSTERS = 20
 N_PCA_COMPONENTS = None
-EXPL_VAR_MIN = 0.8
+EXPL_VAR_MIN = 0.9
 
 INTERACTIVE = False
 FIGDIR = 'fig'
@@ -97,8 +97,6 @@ class ShearProfileClassificationAnalyser(Analyser):
         self.cape = get_cube(self.cubes, 5, 233)
 
         kwargs = {'lat_slice': TROPICS_SLICE}
-        # TODO: DONT LEAVE IN.
-        kwargs['t_slice'] = slice(1)
 
         self.res = {}
         for filt in self.filters:
