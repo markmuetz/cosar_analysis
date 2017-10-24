@@ -13,9 +13,10 @@ from omnium.utils import get_cube
 
 logger = getLogger('cosar.spca')
 
-TEST_FEATURE_GEN = False
+USE_PCA = False
 
 TROPICS_SLICE = slice(48, 97)
+MIN_N_CLUSTERS = 18
 MAX_N_CLUSTERS = 20
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
@@ -26,20 +27,18 @@ FIGDIR = 'fig'
 COLOURS = random.sample(colors.cnames.values(), MAX_N_CLUSTERS)
 
 
-def calc_pca(X):
+def calc_pca(X, n_pca_components=None, expl_var_min=EXPL_VAR_MIN):
     pca = PCA(n_components=X.shape[1])
     pca.fit(X)
 
     logger.info('EVR: {}'.format(pca.explained_variance_ratio_))
 
-    if N_PCA_COMPONENTS:
-        n_pca_components = N_PCA_COMPONENTS
-    else:
+    if not n_pca_components:
         total_ev = 0
         for i, evr in enumerate(pca.explained_variance_ratio_):
             total_ev += evr
             logger.debug(total_ev)
-            if total_ev >= EXPL_VAR_MIN:
+            if total_ev >= expl_var_min:
                 break
         n_pca_components = i + 1
     logger.info('N_PCA_COMP: {}'.format(n_pca_components))
@@ -105,15 +104,20 @@ class ShearProfileClassificationAnalyser(Analyser):
             self.res[filt] = res
 
             res.X = gen_feature_matrix(self.u, self.v, self.w, self.cape, filter_on=filt, **kwargs)
-            res.X_new, pca, n_pca_components = calc_pca(res.X)
+            if USE_PCA:
+                res.X_new, pca, n_pca_components = calc_pca(res.X)
+            else:
+                res.X_new = res.X
+                n_pca_components = res.X.shape[1]
 
-            for n_clusters in range(2, MAX_N_CLUSTERS):
+            for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
                 logger.info('Running for n_clusters = {}'.format(n_clusters))
                 # Calculates kmeans based on reduced (first 2) components of PCA.
                 kmeans_red = KMeans(n_clusters=n_clusters, random_state=0) \
                              .fit(res.X_new[:, :n_pca_components])
                 # TODO: Not quite right. I need to change so that the number of bins is
-                # one more than the number of labels, but so that the bins are aligned with the labels.
+                # one more than the number of labels, 
+                # but so that the bins are aligned with the labels.
                 logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
 
                 res.disp_res[n_clusters] = (n_pca_components, n_clusters, kmeans_red)
@@ -123,8 +127,8 @@ class ShearProfileClassificationAnalyser(Analyser):
         # Loop over all axes of PCA.
         for i in range(1, n_pca_components):
             for j in range(i):
-                title = '{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'.format(filt, n_pca_components,
-                                                                          n_clusters, i, j)
+                title_fmt = 'use_pca-{}_filt-{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'
+                title = title_fmt.format(USE_PCA, filt, n_pca_components, n_clusters, i, j)
                 plt.figure(title)
                 plt.clf()
                 plt.title(title)
@@ -140,8 +144,8 @@ class ShearProfileClassificationAnalyser(Analyser):
         n_pca_components, n_clusters, kmeans_red = disp_res
 
         for cluster_index in range(n_clusters):
-            title = '{}_profile-{}_n_clust-{}_ci-{}'.format(filt, n_pca_components,
-                                                            n_clusters, cluster_index)
+            title_fmt = 'use_pca-{}_filt-{}_profile-{}_n_clust-{}_ci-{}'
+            title = title_fmt.format(USE_PCA, filt, n_pca_components, n_clusters, cluster_index)
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -160,7 +164,7 @@ class ShearProfileClassificationAnalyser(Analyser):
     def display_results(self):
         for filt in self.filters:
             res = self.res[filt]
-            for n_clusters in range(2, MAX_N_CLUSTERS):
+            for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
                 disp_res = res.disp_res[n_clusters]
                 self.plot_cluster_results(filt, res, disp_res)
                 self.plot_profile_results(filt, res, disp_res)
