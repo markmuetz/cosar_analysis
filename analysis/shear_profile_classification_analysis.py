@@ -1,6 +1,7 @@
 import os
 from logging import getLogger
 import random
+import itertools
 
 import numpy as np
 import pylab as plt
@@ -12,8 +13,6 @@ from omnium.analyser import Analyser
 from omnium.utils import get_cube
 
 logger = getLogger('cosar.spca')
-
-USE_PCA = False
 
 TROPICS_SLICE = slice(48, 97)
 MIN_N_CLUSTERS = 18
@@ -98,13 +97,13 @@ class ShearProfileClassificationAnalyser(Analyser):
         kwargs = {'lat_slice': TROPICS_SLICE}
 
         self.res = {}
-        for filt in self.filters:
+        for use_pca, filt in itertools.product([True, False], self.filters):
             logger.info('Using filter {}'.format(filt))
             res = ShearResult()
-            self.res[filt] = res
+            self.res[(use_pca, filt)] = res
 
             res.X = gen_feature_matrix(self.u, self.v, self.w, self.cape, filter_on=filt, **kwargs)
-            if USE_PCA:
+            if use_pca:
                 res.X_new, pca, n_pca_components = calc_pca(res.X)
             else:
                 res.X_new = res.X
@@ -122,13 +121,13 @@ class ShearProfileClassificationAnalyser(Analyser):
 
                 res.disp_res[n_clusters] = (n_pca_components, n_clusters, kmeans_red)
 
-    def plot_cluster_results(self, filt, res, disp_res):
+    def plot_cluster_results(self, use_pca, filt, res, disp_res):
         n_pca_components, n_clusters, kmeans_red = disp_res
         # Loop over all axes of PCA.
         for i in range(1, n_pca_components):
             for j in range(i):
                 title_fmt = 'use_pca-{}_filt-{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'
-                title = title_fmt.format(USE_PCA, filt, n_pca_components, n_clusters, i, j)
+                title = title_fmt.format(use_pca, filt, n_pca_components, n_clusters, i, j)
                 plt.figure(title)
                 plt.clf()
                 plt.title(title)
@@ -139,13 +138,13 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         plt.close("all")
 
-    def plot_profile_results(self, filt, res, disp_res):
+    def plot_profile_results(self, use_pca, filt, res, disp_res):
         pressure = self.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red = disp_res
 
         for cluster_index in range(n_clusters):
             title_fmt = 'use_pca-{}_filt-{}_profile-{}_n_clust-{}_ci-{}'
-            title = title_fmt.format(USE_PCA, filt, n_pca_components, n_clusters, cluster_index)
+            title = title_fmt.format(use_pca, filt, n_pca_components, n_clusters, cluster_index)
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -162,9 +161,9 @@ class ShearProfileClassificationAnalyser(Analyser):
         plt.close("all")
 
     def display_results(self):
-        for filt in self.filters:
-            res = self.res[filt]
+        for use_pca, filt in itertools.product([True, False], self.filters):
+            res = self.res[(use_pca, filt)]
             for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
                 disp_res = res.disp_res[n_clusters]
-                self.plot_cluster_results(filt, res, disp_res)
-                self.plot_profile_results(filt, res, disp_res)
+                self.plot_cluster_results(use_pca, filt, res, disp_res)
+                self.plot_profile_results(use_pca, filt, res, disp_res)
