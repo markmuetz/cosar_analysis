@@ -23,7 +23,7 @@ EXPL_VAR_MIN = 0.8
 INTERACTIVE = False
 FIGDIR = 'fig'
 
-COLOURS = random.sample(colors.cnames.values(), MAX_N_CLUSTERS)
+COLOURS = random.sample(list(colors.cnames.values()), MAX_N_CLUSTERS)
 
 
 def calc_pca(X):
