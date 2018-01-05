@@ -15,7 +15,7 @@ def _get_python_filenames(dirname):
 
 
 def test_src_generator():
-    filenames = _get_python_filenames('../cosar')
+    filenames = _get_python_filenames('../../cosar')
     for filename in filenames:
         yield _test_conformance_in_file, filename
 
