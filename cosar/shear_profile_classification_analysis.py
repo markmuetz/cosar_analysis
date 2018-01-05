@@ -2,9 +2,11 @@ import os
 from logging import getLogger
 import random
 
+import matplotlib
+matplotlib.use('agg')
+from matplotlib import colors
 import numpy as np
 import pylab as plt
-from matplotlib import colors
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
