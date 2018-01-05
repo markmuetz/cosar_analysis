@@ -3,9 +3,11 @@ from logging import getLogger
 import random
 import itertools
 
+import matplotlib
+matplotlib.use('agg')
+from matplotlib import colors
 import numpy as np
 import pylab as plt
-from matplotlib import colors
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
@@ -23,7 +25,7 @@ EXPL_VAR_MIN = 0.9
 INTERACTIVE = False
 FIGDIR = 'fig'
 
-COLOURS = random.sample(colors.cnames.values(), MAX_N_CLUSTERS)
+COLOURS = random.sample(list(colors.cnames.values()), MAX_N_CLUSTERS)
 
 
 def calc_pca(X, n_pca_components=None, expl_var_min=EXPL_VAR_MIN):
