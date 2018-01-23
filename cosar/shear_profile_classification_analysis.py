@@ -51,24 +51,53 @@ def calc_pca(X, n_pca_components=None, expl_var_min=EXPL_VAR_MIN):
 
 def gen_feature_matrix(u, v, w, cape,
                        filter_on=None,
+                       norm=None,
                        t_slice=slice(None),
                        lat_slice=slice(None),
                        lon_slice=slice(None)):
     # Explanation: slice arrays on t, lat, lon, re-order axes to put height last,
     # reshape to get matrix where each row is a height profile.
-    Xu = u.data[t_slice, :, lat_slice, lon_slice].transpose(0, 2, 3, 1).reshape(-1, 6)
-    Xv = v.data[t_slice, :, lat_slice, lon_slice].transpose(0, 2, 3, 1).reshape(-1, 6)
-    # Add the two matrices together to get feature set.
-    X = np.concatenate((Xu, Xv), axis=1)
+    sliced_u = u.data[t_slice, :, lat_slice, lon_slice] 
+    sliced_v = v.data[t_slice, :, lat_slice, lon_slice] 
+    if norm == 'None':
+        Xu = sliced_u.transpose(0, 2, 3, 1).reshape(-1, 6)
+        Xv = sliced_v.transpose(0, 2, 3, 1).reshape(-1, 6)
+        # Add the two matrices together to get feature set.
+        X = np.concatenate((Xu, Xv), axis=1)
+    else:
+        mag = np.sqrt(sliced_u**2 + sliced_v**2)
+        rot = np.arctan2(sliced_v, sliced_u)
+
+        # Normalize the profiles by the maximum magnitude at each level.
+        max_mag = mag.max(axis=(0, 2, 3))
+        norm_mag = mag / max_mag[None, :, None, None]
+        u_norm_mag = norm_mag * np.cos(rot)
+        v_norm_mag = norm_mag * np.sin(rot)
+
+        # Normalize the profiles by the rotation at level 2.
+        rot_at_level = rot[:, 2, :, :]
+        norm_rot = rot - rot_at_level[:, None, :, :]
+
+        u_norm_mag_rot = norm_mag * np.cos(norm_rot)
+        v_norm_mag_rot = norm_mag * np.sin(norm_rot)
+
+        if norm == 'mag':
+            Xu = u_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 6)
+            Xv = u_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 6)
+            # Add the two matrices together to get feature set.
+            X = np.concatenate((Xu, Xv), axis=1)
+        elif norm == 'mag_rot':
+            Xu = u_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 6)
+            Xv = u_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 6)
+            # Add the two matrices together to get feature set.
+            X = np.concatenate((Xu, Xv), axis=1)
 
     if filter_on == 'w':
         # Only want values where w > 0 at 850 hPa.
-        # height level 4 == 850 hPa.
-        keep = w.data[t_slice, 4, lat_slice, lon_slice].flatten() > 0
+        # height level 2 == 850 hPa.
+        keep = w.data[t_slice, 2, lat_slice, lon_slice].flatten() > 0
         return X[keep, :]
     elif filter_on == 'cape':
-        # Only want values where w > 0 at 850 hPa.
-        # height level 4 == 850 hPa.
         keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > 500
         return X[keep, :]
     else:
@@ -89,6 +118,7 @@ class ShearProfileClassificationAnalyser(Analyser):
     single_file = True
 
     filters = [None, 'w', 'cape']
+    normalization = [None, 'mag', 'mag_rot']
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -99,12 +129,12 @@ class ShearProfileClassificationAnalyser(Analyser):
         kwargs = {'lat_slice': TROPICS_SLICE}
 
         self.res = {}
-        for use_pca, filt in itertools.product([True, False], self.filters):
+        for use_pca, filt, norm in itertools.product([True, False], self.filters, self.normalization):
             logger.info('Using filter {}'.format(filt))
             res = ShearResult()
-            self.res[(use_pca, filt)] = res
+            self.res[(use_pca, filt, norm)] = res
 
-            res.X = gen_feature_matrix(self.u, self.v, self.w, self.cape, filter_on=filt, **kwargs)
+            res.X = gen_feature_matrix(self.u, self.v, self.w, self.cape, filter_on=filt, norm=norm, **kwargs)
             if use_pca:
                 res.X_new, pca, n_pca_components = calc_pca(res.X)
             else:
@@ -123,13 +153,13 @@ class ShearProfileClassificationAnalyser(Analyser):
 
                 res.disp_res[n_clusters] = (n_pca_components, n_clusters, kmeans_red)
 
-    def plot_cluster_results(self, use_pca, filt, res, disp_res):
+    def plot_cluster_results(self, use_pca, filt, norm, res, disp_res):
         n_pca_components, n_clusters, kmeans_red = disp_res
         # Loop over all axes of PCA.
         for i in range(1, n_pca_components):
             for j in range(i):
-                title_fmt = 'use_pca-{}_filt-{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'
-                title = title_fmt.format(use_pca, filt, n_pca_components, n_clusters, i, j)
+                title_fmt = 'use_pca-{}_filt-{}_norm-{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'
+                title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, i, j)
                 plt.figure(title)
                 plt.clf()
                 plt.title(title)
@@ -140,13 +170,13 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         plt.close("all")
 
-    def plot_profile_results(self, use_pca, filt, res, disp_res):
+    def plot_profile_results(self, use_pca, filt, norm, res, disp_res):
         pressure = self.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red = disp_res
 
         for cluster_index in range(n_clusters):
-            title_fmt = 'use_pca-{}_filt-{}_profile-{}_n_clust-{}_ci-{}'
-            title = title_fmt.format(use_pca, filt, n_pca_components, n_clusters, cluster_index)
+            title_fmt = 'use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, cluster_index)
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -163,9 +193,9 @@ class ShearProfileClassificationAnalyser(Analyser):
         plt.close("all")
 
     def display_results(self):
-        for use_pca, filt in itertools.product([True, False], self.filters):
-            res = self.res[(use_pca, filt)]
+        for use_pca, filt, norm in itertools.product([True, False], self.filters, self.normalization):
+            res = self.res[(use_pca, filt, norm)]
             for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
                 disp_res = res.disp_res[n_clusters]
-                self.plot_cluster_results(use_pca, filt, res, disp_res)
-                self.plot_profile_results(use_pca, filt, res, disp_res)
+                self.plot_cluster_results(use_pca, filt, norm, res, disp_res)
+                self.plot_profile_results(use_pca, filt, norm, res, disp_res)
