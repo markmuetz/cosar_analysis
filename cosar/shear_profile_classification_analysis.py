@@ -59,7 +59,7 @@ def gen_feature_matrix(u, v, w, cape,
     # reshape to get matrix where each row is a height profile.
     sliced_u = u.data[t_slice, :, lat_slice, lon_slice] 
     sliced_v = v.data[t_slice, :, lat_slice, lon_slice] 
-    if norm == 'None':
+    if norm is None:
         Xu = sliced_u.transpose(0, 2, 3, 1).reshape(-1, 7)
         Xv = sliced_v.transpose(0, 2, 3, 1).reshape(-1, 7)
         # Add the two matrices together to get feature set.
