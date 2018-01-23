@@ -158,7 +158,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         # Loop over all axes of PCA.
         for i in range(1, n_pca_components):
             for j in range(i):
-                title_fmt = 'use_pca-{}_filt-{}_norm-{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'
+                title_fmt = 'CLUSTERS_use_pca-{}_filt-{}_norm-{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'
                 title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, i, j)
                 plt.figure(title)
                 plt.clf()
@@ -175,7 +175,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         n_pca_components, n_clusters, kmeans_red = disp_res
 
         for cluster_index in range(n_clusters):
-            title_fmt = 'use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
+            title_fmt = 'PROFILES_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
             title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, cluster_index)
             plt.figure(title)
             plt.clf()
@@ -216,6 +216,23 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
+
+    def plot_level_hists(self, use_pca, filt, norm, res, disp_res):
+        raise NotImplemented('need to get e.g. u_norm_mag_rot for this to work')
+        title_fmt = 'LEVEL_HISTS_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
+
+        min_u = u.min()
+        max_u = u.max()
+        min_v = v.min()
+        max_v = v.max()
+
+        f, axes = plt.subplots(1, u.shape[1])
+        for i, ax in enumerate(axes):
+            ax.hist2d(u[:, i, :, :].flatten(), v[:, i, :, :].flatten(), bins=100, cmap='hot', norm=LogNorm())
+            ax.set_xlim((min_u, max_u))
+            ax.set_ylim((min_v, max_v))
+        plt.savefig(self.figpath(title) + '.png')
+
 
     def display_results(self):
         for use_pca, filt, norm in itertools.product([True, False], self.filters, self.normalization):
