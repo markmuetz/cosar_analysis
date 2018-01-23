@@ -56,8 +56,8 @@ def gen_feature_matrix(u, v, w, cape,
                        lon_slice=slice(None)):
     # Explanation: slice arrays on t, lat, lon, re-order axes to put height last,
     # reshape to get matrix where each row is a height profile.
-    Xu = u.data[t_slice, :, lat_slice, lon_slice].transpose(0, 2, 3, 1).reshape(-1, 6)
-    Xv = v.data[t_slice, :, lat_slice, lon_slice].transpose(0, 2, 3, 1).reshape(-1, 6)
+    Xu = u.data[t_slice, :, lat_slice, lon_slice].transpose(0, 2, 3, 1).reshape(-1, 7)
+    Xv = v.data[t_slice, :, lat_slice, lon_slice].transpose(0, 2, 3, 1).reshape(-1, 7)
     # Add the two matrices together to get feature set.
     X = np.concatenate((Xu, Xv), axis=1)
 
@@ -89,6 +89,7 @@ class ShearProfileClassificationAnalyser(Analyser):
     single_file = True
 
     filters = [None, 'w', 'cape']
+    # filters = [None, 'w']
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -152,12 +153,37 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.title(title)
 
             # Get original samples based on how they've been classified.
-            vs = res.X[kmeans_red.labels_ == cluster_index]
-            us = vs[:, :6]
-            vs = vs[:, 6:]
-            for u, v in zip(us, vs):
-                plt.plot(u, pressure, 'b')
-                plt.plot(v, pressure, 'r')
+            vels = res.X[kmeans_red.labels_ == cluster_index]
+            us = vels[:, :7]
+            vs = vels[:, 7:]
+            u_min = us.min(axis=0)
+            u_max = us.max(axis=0)
+            u_mean = us.mean(axis=0)
+            u_std = us.std(axis=0)
+
+            v_min = vs.min(axis=0)
+            v_max = vs.max(axis=0)
+            v_mean = vs.mean(axis=0)
+            v_std = vs.std(axis=0)
+
+            plt.plot(u_min, pressure, 'b:')
+            plt.plot(u_max, pressure, 'b:')
+            plt.plot(u_mean - u_std, pressure, 'b--')
+            plt.plot(u_mean + u_std, pressure, 'b--')
+            plt.plot(u_mean, pressure, 'b-')
+
+            plt.plot(v_min, pressure, 'r:')
+            plt.plot(v_max, pressure, 'r:')
+            plt.plot(v_mean - v_std, pressure, 'r--')
+            plt.plot(v_mean + v_std, pressure, 'r--')
+            plt.plot(v_mean, pressure, 'r-')
+
+            if False:
+                for u, v in zip(us, vs):
+                    plt.plot(u, pressure, 'b')
+                    plt.plot(v, pressure, 'r')
+
+            plt.ylim((pressure.max(), pressure.min()))
 
             plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
@@ -167,5 +193,5 @@ class ShearProfileClassificationAnalyser(Analyser):
             res = self.res[(use_pca, filt)]
             for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
                 disp_res = res.disp_res[n_clusters]
-                self.plot_cluster_results(use_pca, filt, res, disp_res)
+                # self.plot_cluster_results(use_pca, filt, res, disp_res)
                 self.plot_profile_results(use_pca, filt, res, disp_res)
