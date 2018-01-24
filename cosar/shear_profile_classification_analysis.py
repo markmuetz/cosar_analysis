@@ -75,6 +75,7 @@ def gen_feature_matrix(u, v, w, cape,
         # Normalize the profiles by the maximum magnitude at each level.
         max_mag = mag.max(axis=(0, 2, 3))
         norm_mag = mag / max_mag[None, :, None, None]
+        # import ipdb; ipdb.set_trace()
         u_norm_mag = norm_mag * np.cos(rot)
         v_norm_mag = norm_mag * np.sin(rot)
 
@@ -158,11 +159,12 @@ class ShearProfileClassificationAnalyser(Analyser):
     single_file = True
 
     pca = [True, False]
-    filters = [None, 'w', 'cape']
-    normalization = [None, 'mag', 'magrot']
-    # pca = [True]
-    # filters = ['cape']
-    # normalization = ['magrot']
+    # filters = [None, 'w', 'cape']
+    # filters = ['w', 'cape']
+    # normalization = [None, 'mag', 'magrot']
+    pca = [True]
+    filters = ['cape']
+    normalization = ['magrot']
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -175,7 +177,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         self.res = {}
         for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
-            logger.info('Using filter {}'.format(filt))
+            logger.info('Using (pca, filt, norm): ({}, {}, {})'.format(use_pca, filt, norm))
             res = ShearResult()
             self.res[(use_pca, filt, norm)] = res
 
@@ -235,20 +237,22 @@ class ShearProfileClassificationAnalyser(Analyser):
             u_max = us.max(axis=0)
             u_mean = us.mean(axis=0)
             u_std = us.std(axis=0)
+            u_p25, u_p75 = np.percentile(us, (25, 75), axis=0)
 
             v_min = vs.min(axis=0)
             v_max = vs.max(axis=0)
             v_mean = vs.mean(axis=0)
             v_std = vs.std(axis=0)
+            v_p25, v_p75 = np.percentile(vs, (25, 75), axis=0)
 
-            plt.plot(u_min, pressure, 'b:')
-            plt.plot(u_max, pressure, 'b:')
+            plt.plot(u_p25, pressure, 'b:')
+            plt.plot(u_p75, pressure, 'b:')
             plt.plot(u_mean - u_std, pressure, 'b--')
             plt.plot(u_mean + u_std, pressure, 'b--')
             plt.plot(u_mean, pressure, 'b-', label='u')
 
-            plt.plot(v_min, pressure, 'r:')
-            plt.plot(v_max, pressure, 'r:')
+            plt.plot(v_p25, pressure, 'r:')
+            plt.plot(v_p75, pressure, 'r:')
             plt.plot(v_mean - v_std, pressure, 'r--')
             plt.plot(v_mean + v_std, pressure, 'r--')
             plt.plot(v_mean, pressure, 'r-', label='v')
