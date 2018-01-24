@@ -17,7 +17,7 @@ from omnium.utils import get_cube
 logger = getLogger('cosar.spca')
 
 TROPICS_SLICE = slice(48, 97)
-MIN_N_CLUSTERS = 18
+MIN_N_CLUSTERS = 19
 MAX_N_CLUSTERS = 20
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
@@ -55,18 +55,22 @@ def gen_feature_matrix(u, v, w, cape,
                        t_slice=slice(None),
                        lat_slice=slice(None),
                        lon_slice=slice(None)):
-    # Explanation: slice arrays on t, lat, lon, re-order axes to put height last,
-    # reshape to get matrix where each row is a height profile.
-    sliced_u = u.data[t_slice, :, lat_slice, lon_slice] 
-    sliced_v = v.data[t_slice, :, lat_slice, lon_slice] 
+    # Explanation: slice arrays on t, lat, lon
+    sliced_u = u[t_slice, :, lat_slice, lon_slice] 
+    sliced_v = v[t_slice, :, lat_slice, lon_slice] 
+    logger.info('Sliced shape: {}'.format(sliced_u.shape))
     if norm is None:
-        Xu = sliced_u.transpose(0, 2, 3, 1).reshape(-1, 7)
-        Xv = sliced_v.transpose(0, 2, 3, 1).reshape(-1, 7)
+        # re-order axes to put height last,
+        # reshape to get matrix where each row is a height profile.
+        Xu = sliced_u.data.transpose(0, 2, 3, 1).reshape(-1, 7)
+        Xv = sliced_v.data.transpose(0, 2, 3, 1).reshape(-1, 7)
+        # N.B. Xu[0] == sliced_u.data[0, :, 0, 0] ...
+
         # Add the two matrices together to get feature set.
         X = np.concatenate((Xu, Xv), axis=1)
     else:
-        mag = np.sqrt(sliced_u**2 + sliced_v**2)
-        rot = np.arctan2(sliced_v, sliced_u)
+        mag = np.sqrt(sliced_u.data**2 + sliced_v.data**2)
+        rot = np.arctan2(sliced_v.data, sliced_u.data)
 
         # Normalize the profiles by the maximum magnitude at each level.
         max_mag = mag.max(axis=(0, 2, 3))
@@ -74,8 +78,8 @@ def gen_feature_matrix(u, v, w, cape,
         u_norm_mag = norm_mag * np.cos(rot)
         v_norm_mag = norm_mag * np.sin(rot)
 
-        # Normalize the profiles by the rotation at level 2.
-        rot_at_level = rot[:, 2, :, :]
+        # Normalize the profiles by the rotation at level 4 == 850 hPa.
+        rot_at_level = rot[:, 4, :, :]
         norm_rot = rot - rot_at_level[:, None, :, :]
 
         u_norm_mag_rot = norm_mag * np.cos(norm_rot)
@@ -83,30 +87,66 @@ def gen_feature_matrix(u, v, w, cape,
 
         if norm == 'mag':
             Xu = u_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
-            Xv = u_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
+            Xv = v_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
             # Add the two matrices together to get feature set.
             X = np.concatenate((Xu, Xv), axis=1)
         elif norm == 'mag_rot':
             Xu = u_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
-            Xv = u_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
+            Xv = v_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
             # Add the two matrices together to get feature set.
             X = np.concatenate((Xu, Xv), axis=1)
 
+    logger.info('X shape: {}'.format(sliced_u.shape))
+    # Need to be able to map back to lat/lon later. The easiest way I can think of doing this
+    # is to create a lat/lon array with the same shape as the (time, lat, lon) part of the 
+    # full cube, then reshape this so that it is a 1D array with the same length as the 1st
+    # dim of Xu (e.g. X_full_lat_lon). I can then filter it and use it to map back to lat/lon.
+    lat = u[0, 0, lat_slice, lon_slice].coord('latitude').points
+    lon = u[0, 0, lat_slice, lon_slice].coord('longitude').points
+    latlon = np.meshgrid(lat, lon, indexing='ij')
+
+    # This has (time, lat, lon) as coords.
+    full_lat = np.zeros((sliced_u.shape[0], sliced_u.shape[2], sliced_u.shape[3]))
+    full_lon = np.zeros((sliced_u.shape[0], sliced_u.shape[2], sliced_u.shape[3]))
+
+    # Broadcast latlons into higher dim array.
+    full_lat[:] = latlon[0]
+    full_lon[:] = latlon[1]
+
+    X_full_lat = full_lat.flatten()
+    X_full_lon = full_lon.flatten()
+
+    # How can you test this is right?
+    # e.g. get sliced_u[0, :, 23, 32].coord('latitude') and lon
+    # find the indices for this using np.where((X_full_lat == lat) & (...
+    # look at the data value and compare to indexed value of Xu.
     if filter_on == 'w':
         # Only want values where w > 0 at 850 hPa.
-        # height level 2 == 850 hPa.
-        keep = w.data[t_slice, 2, lat_slice, lon_slice].flatten() > 0
-        return X[keep, :]
+        # height level 4 == 850 hPa.
+        keep = w.data[t_slice, 4, lat_slice, lon_slice].flatten() > 0
+        X_filtered = X[keep, :]
+        X_filtered_lat = X_full_lat[keep]
+        X_filtered_lon = X_full_lon[keep]
+
     elif filter_on == 'cape':
         keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > 500
-        return X[keep, :]
+        X_filtered = X[keep, :]
+        X_filtered_lat = X_full_lat[keep]
+        X_filtered_lon = X_full_lon[keep]
     else:
-        return X
+        X_filtered = X
+        X_filtered_lat = X_full_lat
+        X_filtered_lon = X_full_lon
+
+    logger.info('X_filtered shape: {}'.format(X_filtered.shape))
+
+    return X_filtered, (X_filtered_lat, X_filtered_lon)
 
 
 class ShearResult(object):
     def __init__(self):
         self.X = None
+        self.X_latlon = None
         self.X_new = None
         self.pca = None
         self.n_pca_components = None
@@ -117,6 +157,7 @@ class ShearProfileClassificationAnalyser(Analyser):
     analysis_name = 'shear_profile_classification_analysis'
     single_file = True
 
+    pca = [True, False]
     filters = [None, 'w', 'cape']
     normalization = [None, 'mag', 'mag_rot']
 
@@ -124,17 +165,19 @@ class ShearProfileClassificationAnalyser(Analyser):
         self.u = get_cube(self.cubes, 30, 201)
         self.v = get_cube(self.cubes, 30, 202)
         self.w = get_cube(self.cubes, 30, 203)
+        logger.info('Cube shape: {}'.format(self.u.shape))
         self.cape = get_cube(self.cubes, 5, 233)
 
         kwargs = {'lat_slice': TROPICS_SLICE}
 
         self.res = {}
-        for use_pca, filt, norm in itertools.product([True, False], self.filters, self.normalization):
+        for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
             logger.info('Using filter {}'.format(filt))
             res = ShearResult()
             self.res[(use_pca, filt, norm)] = res
 
-            res.X = gen_feature_matrix(self.u, self.v, self.w, self.cape, filter_on=filt, norm=norm, **kwargs)
+            res.X, res.X_latlon = gen_feature_matrix(self.u, self.v, self.w, self.cape, 
+                                                     filter_on=filt, norm=norm, **kwargs)
             if use_pca:
                 res.X_new, pca, n_pca_components = calc_pca(res.X)
             else:
@@ -218,26 +261,57 @@ class ShearProfileClassificationAnalyser(Analyser):
         plt.close("all")
 
     def plot_level_hists(self, use_pca, filt, norm, res, disp_res):
-        raise NotImplemented('need to get e.g. u_norm_mag_rot for this to work')
-        title_fmt = 'LEVEL_HISTS_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
+        title_fmt = 'LEVEL_HISTS_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}'
+        n_pca_components, n_clusters, kmeans_red = disp_res
+        title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters)
+
+        vels = res.X
+        u = vels[:, :7]
+        v = vels[:, 7:]
 
         min_u = u.min()
         max_u = u.max()
         min_v = v.min()
         max_v = v.max()
+        absmax_uv = np.max(np.abs([min_u, max_u, min_v, max_v]))
 
-        f, axes = plt.subplots(1, u.shape[1])
+        f, axes = plt.subplots(1, u.shape[1], figsize=(49, 7))
         for i, ax in enumerate(axes):
-            ax.hist2d(u[:, i, :, :].flatten(), v[:, i, :, :].flatten(), bins=100, cmap='hot', norm=LogNorm())
-            ax.set_xlim((min_u, max_u))
-            ax.set_ylim((min_v, max_v))
+            ax.hist2d(u[:, i], v[:, i], bins=100, cmap='hot',
+                      norm=colors.LogNorm())
+            ax.set_xlim((-absmax_uv, absmax_uv))
+            ax.set_ylim((-absmax_uv, absmax_uv))
         plt.savefig(self.figpath(title) + '.png')
+        plt.close("all")
 
+    def plot_geog_loc(self, use_pca, filt, norm, res, disp_res):
+        pressure = self.u.coord('pressure').points
+        n_pca_components, n_clusters, kmeans_red = disp_res
+
+        for cluster_index in range(n_clusters):
+            title_fmt = 'GEOG_LOC_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, cluster_index)
+            plt.figure(title)
+            plt.clf()
+            plt.title(title)
+
+            # Get original samples based on how they've been classified.
+            lat = res.X_latlon[0]
+            lon = res.X_latlon[1]
+            cluster_lat = lat[kmeans_red.labels_ == cluster_index]
+            cluster_lon = lon[kmeans_red.labels_ == cluster_index]
+
+            plt.hist2d(cluster_lon, cluster_lat, bins=50, cmap='hot')
+
+            plt.savefig(self.figpath(title) + '.png')
+        plt.close("all")
 
     def display_results(self):
-        for use_pca, filt, norm in itertools.product([True, False], self.filters, self.normalization):
+        for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
             res = self.res[(use_pca, filt, norm)]
             for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
                 disp_res = res.disp_res[n_clusters]
                 # self.plot_cluster_results(use_pca, filt, norm, res, disp_res)
                 self.plot_profile_results(use_pca, filt, norm, res, disp_res)
+                self.plot_level_hists(use_pca, filt, norm, res, disp_res)
+                self.plot_geog_loc(use_pca, filt, norm, res, disp_res)
