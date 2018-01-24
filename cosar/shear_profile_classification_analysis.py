@@ -90,7 +90,7 @@ def gen_feature_matrix(u, v, w, cape,
             Xv = v_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
             # Add the two matrices together to get feature set.
             X = np.concatenate((Xu, Xv), axis=1)
-        elif norm == 'mag_rot':
+        elif norm == 'magrot':
             Xu = u_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
             Xv = v_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
             # Add the two matrices together to get feature set.
@@ -159,7 +159,10 @@ class ShearProfileClassificationAnalyser(Analyser):
 
     pca = [True, False]
     filters = [None, 'w', 'cape']
-    normalization = [None, 'mag', 'mag_rot']
+    normalization = [None, 'mag', 'magrot']
+    # pca = [True]
+    # filters = ['cape']
+    # normalization = ['magrot']
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -242,13 +245,14 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.plot(u_max, pressure, 'b:')
             plt.plot(u_mean - u_std, pressure, 'b--')
             plt.plot(u_mean + u_std, pressure, 'b--')
-            plt.plot(u_mean, pressure, 'b-')
+            plt.plot(u_mean, pressure, 'b-', label='u')
 
             plt.plot(v_min, pressure, 'r:')
             plt.plot(v_max, pressure, 'r:')
             plt.plot(v_mean - v_std, pressure, 'r--')
             plt.plot(v_mean + v_std, pressure, 'r--')
-            plt.plot(v_mean, pressure, 'r-')
+            plt.plot(v_mean, pressure, 'r-', label='v')
+            plt.legend(loc='best')
 
             if False:
                 for u, v in zip(us, vs):
@@ -256,6 +260,8 @@ class ShearProfileClassificationAnalyser(Analyser):
                     plt.plot(v, pressure, 'r')
 
             plt.ylim((pressure.max(), pressure.min()))
+            plt.xlabel('wind speed (m s$^{-1}$)')
+            plt.ylabel('pressure (hPa)')
 
             plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
@@ -275,12 +281,19 @@ class ShearProfileClassificationAnalyser(Analyser):
         max_v = v.max()
         absmax_uv = np.max(np.abs([min_u, max_u, min_v, max_v]))
 
+        pressure = self.u.coord('pressure').points
         f, axes = plt.subplots(1, u.shape[1], figsize=(49, 7))
-        for i, ax in enumerate(axes):
-            ax.hist2d(u[:, i], v[:, i], bins=100, cmap='hot',
+        for i in range(u.shape[1]):
+            ax = axes[i]
+            ax.hist2d(u[:, -(i + 1)], v[:, -(i + 1)], bins=100, cmap='hot',
                       norm=colors.LogNorm())
+            ax.set_title('{} hPa'.format(pressure[-(i + 1)]))
             ax.set_xlim((-absmax_uv, absmax_uv))
             ax.set_ylim((-absmax_uv, absmax_uv))
+            ax.set_xlabel('u (m s$^{-1}$)')
+            if i == 0:
+                ax.set_ylabel('v (m s$^{-1}$)')
+
         plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
 
@@ -302,6 +315,10 @@ class ShearProfileClassificationAnalyser(Analyser):
             cluster_lon = lon[kmeans_red.labels_ == cluster_index]
 
             plt.hist2d(cluster_lon, cluster_lat, bins=50, cmap='hot')
+            plt.xlim((0, 360))
+            plt.ylim((-30, 30))
+            plt.xlabel('longitude')
+            plt.ylabel('latitude')
 
             plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
