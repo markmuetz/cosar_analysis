@@ -17,15 +17,14 @@ from omnium.utils import get_cube
 logger = getLogger('cosar.spca')
 
 TROPICS_SLICE = slice(48, 97)
-MIN_N_CLUSTERS = 19
-MAX_N_CLUSTERS = 20
+CLUSTERS = [5, 10, 20]
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 
 INTERACTIVE = False
 FIGDIR = 'fig'
 
-COLOURS = random.sample(list(colors.cnames.values()), MAX_N_CLUSTERS)
+COLOURS = random.sample(list(colors.cnames.values()), max(CLUSTERS))
 
 
 def calc_pca(X, n_pca_components=None, expl_var_min=EXPL_VAR_MIN):
@@ -61,21 +60,23 @@ def gen_feature_matrix(u, v, w, cape,
     sliced_u = u[t_slice, :, lat_slice, lon_slice] 
     sliced_v = v[t_slice, :, lat_slice, lon_slice] 
     logger.info('Sliced shape: {}'.format(sliced_u.shape))
-    if norm is None:
-        # re-order axes to put height last,
-        # reshape to get matrix where each row is a height profile.
-        Xu = sliced_u.data.transpose(0, 2, 3, 1).reshape(-1, 7)
-        Xv = sliced_v.data.transpose(0, 2, 3, 1).reshape(-1, 7)
-        # N.B. Xu[0] == sliced_u.data[0, :, 0, 0] ...
 
-        # Add the two matrices together to get feature set.
-        X = np.concatenate((Xu, Xv), axis=1)
-    else:
+    # re-order axes to put height last,
+    # reshape to get matrix where each row is a height profile.
+    orig_Xu = sliced_u.data.transpose(0, 2, 3, 1).reshape(-1, 7)
+    orig_Xv = sliced_v.data.transpose(0, 2, 3, 1).reshape(-1, 7)
+    # N.B. Xu[0] == sliced_u.data[0, :, 0, 0] ...
+
+    # Add the two matrices together to get feature set.
+    orig_X = np.concatenate((orig_Xu, orig_Xv), axis=1)
+
+    if norm is not None:
         mag = np.sqrt(sliced_u.data**2 + sliced_v.data**2)
         rot = np.arctan2(sliced_v.data, sliced_u.data)
 
         # Normalize the profiles by the maximum magnitude at each level.
         max_mag = mag.max(axis=(0, 2, 3))
+        logger.debug('max_mag = {}'.format(max_mag))
         norm_mag = mag / max_mag[None, :, None, None]
         # import ipdb; ipdb.set_trace()
         u_norm_mag = norm_mag * np.cos(rot)
@@ -124,10 +125,6 @@ def gen_feature_matrix(u, v, w, cape,
     # find the indices for this using np.where((X_full_lat == lat) & (...
     # look at the data value and compare to indexed value of Xu.
 
-    X_filtered = X
-    X_filtered_lat = X_full_lat
-    X_filtered_lon = X_full_lon
-
     last_keep = np.ones(w.data[t_slice, 0, lat_slice, lon_slice].size, dtype=bool)
     keep = last_keep
 
@@ -164,19 +161,23 @@ def gen_feature_matrix(u, v, w, cape,
         keep &= last_keep
         last_keep = keep
 
+    orig_X_filtered = orig_X[keep, :]
     X_filtered = X[keep, :]
+
     X_filtered_lat = X_full_lat[keep]
     X_filtered_lon = X_full_lon[keep]
 
     logger.info('X_filtered shape: {}'.format(X_filtered.shape))
 
-    return X_filtered, (X_filtered_lat, X_filtered_lon)
+    return orig_X_filtered, X_filtered, (X_filtered_lat, X_filtered_lon), max_mag
 
 
 class ShearResult(object):
     def __init__(self):
+        self.orig_X = None
         self.X = None
         self.X_latlon = None
+        self.max_mag = None
         self.X_new = None
         self.pca = None
         self.n_pca_components = None
@@ -211,15 +212,15 @@ class ShearProfileClassificationAnalyser(Analyser):
             res = ShearResult()
             self.res[(use_pca, filt, norm)] = res
 
-            res.X, res.X_latlon = gen_feature_matrix(self.u, self.v, self.w, self.cape, 
-                                                     filter_on=filt, norm=norm, **kwargs)
+            res.orig_X, res.X, res.X_latlon, res.max_mag = gen_feature_matrix(self.u, self.v, self.w, self.cape, 
+                                                                              filter_on=filt, norm=norm, **kwargs)
             if use_pca:
                 res.X_new, pca, n_pca_components = calc_pca(res.X)
             else:
                 res.X_new = res.X
                 n_pca_components = res.X.shape[1]
 
-            for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
+            for n_clusters in CLUSTERS:
                 logger.info('Running for n_clusters = {}'.format(n_clusters))
                 # Calculates kmeans based on reduced (first 2) components of PCA.
                 kmeans_red = KMeans(n_clusters=n_clusters, random_state=0) \
@@ -264,19 +265,28 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             # Get original samples based on how they've been classified.
             vels = res.X[keep]
-            us = vels[:, :7]
-            vs = vels[:, 7:]
-            u_min = us.min(axis=0)
-            u_max = us.max(axis=0)
-            u_mean = us.mean(axis=0)
-            u_std = us.std(axis=0)
-            u_p25, u_p75 = np.percentile(us, (25, 75), axis=0)
+            if res.max_mag is not None:
+                # De-normalize.
+                norm_u = vels[:, :7]
+                norm_v = vels[:, 7:]
+                mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag
+                rot = np.arctan2(norm_v, norm_u)
+                u = mag * np.cos(rot)
+                v = mag * np.sin(rot)
+            else:
+                u = vels[:, :7]
+                v = vels[:, 7:]
+            u_min = u.min(axis=0)
+            u_max = u.max(axis=0)
+            u_mean = u.mean(axis=0)
+            u_std = u.std(axis=0)
+            u_p25, u_p75 = np.percentile(u, (25, 75), axis=0)
 
-            v_min = vs.min(axis=0)
-            v_max = vs.max(axis=0)
-            v_mean = vs.mean(axis=0)
-            v_std = vs.std(axis=0)
-            v_p25, v_p75 = np.percentile(vs, (25, 75), axis=0)
+            v_min = v.min(axis=0)
+            v_max = v.max(axis=0)
+            v_mean = v.mean(axis=0)
+            v_std = v.std(axis=0)
+            v_p25, v_p75 = np.percentile(v, (25, 75), axis=0)
 
             plt.plot(u_p25, pressure, 'b:')
             plt.plot(u_p75, pressure, 'b:')
@@ -292,7 +302,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.legend(loc='best')
 
             if False:
-                for u, v in zip(us, vs):
+                for u, v in zip(u, v):
                     plt.plot(u, pressure, 'b')
                     plt.plot(v, pressure, 'r')
 
@@ -366,7 +376,7 @@ class ShearProfileClassificationAnalyser(Analyser):
     def display_results(self):
         for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
             res = self.res[(use_pca, filt, norm)]
-            for n_clusters in range(MIN_N_CLUSTERS, MAX_N_CLUSTERS):
+            for n_clusters in CLUSTERS:
                 disp_res = res.disp_res[n_clusters]
                 # self.plot_cluster_results(use_pca, filt, norm, res, disp_res)
                 self.plot_profile_results(use_pca, filt, norm, res, disp_res)
