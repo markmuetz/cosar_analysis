@@ -123,23 +123,50 @@ def gen_feature_matrix(u, v, w, cape,
     # e.g. get sliced_u[0, :, 23, 32].coord('latitude') and lon
     # find the indices for this using np.where((X_full_lat == lat) & (...
     # look at the data value and compare to indexed value of Xu.
-    if filter_on == 'w':
-        # Only want values where w > 0 at 850 hPa.
-        # height level 4 == 850 hPa.
-        keep = w.data[t_slice, 4, lat_slice, lon_slice].flatten() > 0
-        X_filtered = X[keep, :]
-        X_filtered_lat = X_full_lat[keep]
-        X_filtered_lon = X_full_lon[keep]
 
-    elif filter_on == 'cape':
-        keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > 500
-        X_filtered = X[keep, :]
-        X_filtered_lat = X_full_lat[keep]
-        X_filtered_lon = X_full_lon[keep]
-    else:
-        X_filtered = X
-        X_filtered_lat = X_full_lat
-        X_filtered_lon = X_full_lon
+    X_filtered = X
+    X_filtered_lat = X_full_lat
+    X_filtered_lon = X_full_lon
+
+    last_keep = np.ones(w.data[t_slice, 0, lat_slice, lon_slice].size, dtype=bool)
+    keep = last_keep
+
+    for filter in filter_on:
+        logger.debug('using filter {}'.format(filter))
+
+        if filter == 'w':
+            # Only want values where w > 0 at 850 hPa.
+            # height level 4 == 850 hPa.
+            keep = w.data[t_slice, 4, lat_slice, lon_slice].flatten() > 0
+        elif filter == 'cape':
+            keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > 500
+        elif filter == 'shear':
+            pressure = u.coord('pressure').points
+
+            # N.B. pressure [0] is the *highest* pressure. Want higher minus lower.
+            dp = pressure[:-1] - pressure[1:]
+
+            # ditto. Note the newaxis/broadcasting to divide 4D array by 1D array.
+            dudp = (sliced_u.data[:, :-1, :, :] - sliced_u.data[:, 1:, :, :])\
+                   / dp[None, :, None, None]
+            dvdp = (sliced_v.data[:, :-1, :, :] - sliced_v.data[:, 1:, :, :])\
+                   / dp[None, :, None, None]
+
+            # These have one fewer pressure levels.
+            shear = np.sqrt(dudp**2 + dvdp**2)
+            midp = (pressure[:-1] + pressure[1:]) / 2
+
+            # Take max along pressure-axis.
+            max_profile_shear = shear.max(axis=1)
+            max_profile_shear_percentile = np.percentile(max_profile_shear, 25)
+            keep = max_profile_shear.flatten() > max_profile_shear_percentile
+
+        keep &= last_keep
+        last_keep = keep
+
+    X_filtered = X[keep, :]
+    X_filtered_lat = X_full_lat[keep]
+    X_filtered_lon = X_full_lon[keep]
 
     logger.info('X_filtered shape: {}'.format(X_filtered.shape))
 
@@ -165,7 +192,8 @@ class ShearProfileClassificationAnalyser(Analyser):
     # filters = ['w', 'cape']
     # normalization = [None, 'mag', 'magrot']
     pca = [True]
-    filters = ['cape']
+    # filters = [('cape',), ('cape', 'shear')]
+    filters = [('cape', 'shear')]
     normalization = ['magrot']
 
     def run_analysis(self):
@@ -179,7 +207,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         self.res = {}
         for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
-            logger.info('Using (pca, filt, norm): ({}, {}, {})'.format(use_pca, filt, norm))
+            logger.info('Using (pca, filts, norm): ({}, {}, {})'.format(use_pca, filt, norm))
             res = ShearResult()
             self.res[(use_pca, filt, norm)] = res
 
@@ -225,14 +253,17 @@ class ShearProfileClassificationAnalyser(Analyser):
         n_pca_components, n_clusters, kmeans_red = disp_res
 
         for cluster_index in range(n_clusters):
-            title_fmt = 'PROFILES_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
-            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, cluster_index)
+            keep = kmeans_red.labels_ == cluster_index
+
+            title_fmt = 'PROFILES_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
+                                     cluster_index, keep.sum())
             plt.figure(title)
             plt.clf()
             plt.title(title)
 
             # Get original samples based on how they've been classified.
-            vels = res.X[kmeans_red.labels_ == cluster_index]
+            vels = res.X[keep]
             us = vels[:, :7]
             vs = vels[:, 7:]
             u_min = us.min(axis=0)
@@ -273,7 +304,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         plt.close("all")
 
     def plot_level_hists(self, use_pca, filt, norm, res, disp_res):
-        title_fmt = 'LEVEL_HISTS_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}'
+        title_fmt = 'LEVEL_HISTS_{}_{}_{}_-{}_nclust-{}'
         n_pca_components, n_clusters, kmeans_red = disp_res
         title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters)
 
@@ -308,8 +339,11 @@ class ShearProfileClassificationAnalyser(Analyser):
         n_pca_components, n_clusters, kmeans_red = disp_res
 
         for cluster_index in range(n_clusters):
-            title_fmt = 'GEOG_LOC_use_pca-{}_filt-{}_norm-{}_profile-{}_n_clust-{}_ci-{}'
-            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, cluster_index)
+            keep = kmeans_red.labels_ == cluster_index
+
+            title_fmt = 'GEOG_LOC_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
+                                     cluster_index, keep.sum())
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -317,8 +351,8 @@ class ShearProfileClassificationAnalyser(Analyser):
             # Get original samples based on how they've been classified.
             lat = res.X_latlon[0]
             lon = res.X_latlon[1]
-            cluster_lat = lat[kmeans_red.labels_ == cluster_index]
-            cluster_lon = lon[kmeans_red.labels_ == cluster_index]
+            cluster_lat = lat[keep]
+            cluster_lon = lon[keep]
 
             plt.hist2d(cluster_lon, cluster_lat, bins=50, cmap='hot')
             plt.xlim((0, 360))
