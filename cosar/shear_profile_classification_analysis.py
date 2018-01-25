@@ -253,29 +253,27 @@ class ShearProfileClassificationAnalyser(Analyser):
         pressure = self.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red = disp_res
 
+        if res.max_mag is not None:
+            # De-normalize data.
+            norm_u = res.X[:, :7]
+            norm_v = res.X[:, 7:]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag
+            rot = np.arctan2(norm_v, norm_u)
+            all_u = mag * np.cos(rot)
+            all_v = mag * np.sin(rot)
+        else:
+            all_u = res.X[:, :7]
+            all_v = res.X[:, 7:]
+
+        abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
+        abs_max = 20
+
         for cluster_index in range(n_clusters):
             keep = kmeans_red.labels_ == cluster_index
 
-            title_fmt = 'PROFILES_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
-            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
-                                     cluster_index, keep.sum())
-            plt.figure(title)
-            plt.clf()
-            plt.title(title)
+            u = all_u[keep]
+            v = all_v[keep]
 
-            # Get original samples based on how they've been classified.
-            vels = res.X[keep]
-            if res.max_mag is not None:
-                # De-normalize.
-                norm_u = vels[:, :7]
-                norm_v = vels[:, 7:]
-                mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag
-                rot = np.arctan2(norm_v, norm_u)
-                u = mag * np.cos(rot)
-                v = mag * np.sin(rot)
-            else:
-                u = vels[:, :7]
-                v = vels[:, 7:]
             u_min = u.min(axis=0)
             u_max = u.max(axis=0)
             u_mean = u.mean(axis=0)
@@ -287,6 +285,14 @@ class ShearProfileClassificationAnalyser(Analyser):
             v_mean = v.mean(axis=0)
             v_std = v.std(axis=0)
             v_p25, v_p75 = np.percentile(v, (25, 75), axis=0)
+
+            # Profile u/v plots.
+            title_fmt = 'PROFILES_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
+                                     cluster_index, keep.sum())
+            plt.figure(title)
+            plt.clf()
+            plt.title(title)
 
             plt.plot(u_p25, pressure, 'b:')
             plt.plot(u_p75, pressure, 'b:')
@@ -306,11 +312,35 @@ class ShearProfileClassificationAnalyser(Analyser):
                     plt.plot(u, pressure, 'b')
                     plt.plot(v, pressure, 'r')
 
+            plt.xlim((-abs_max, abs_max))
             plt.ylim((pressure.max(), pressure.min()))
             plt.xlabel('wind speed (m s$^{-1}$)')
             plt.ylabel('pressure (hPa)')
 
             plt.savefig(self.figpath(title) + '.png')
+
+            # Profile hodographs.
+            title_fmt = 'HODO_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
+                                     cluster_index, keep.sum())
+            plt.figure(title)
+            plt.clf()
+            plt.title(title)
+
+            plt.plot(u_mean, v_mean, 'k-')
+            for i in range(len(u_mean)):
+                u = u_mean[i]
+                v = v_mean[i]
+                plt.annotate('{}'.format(7 - i), xy=(u, v), xytext=(-2, 2),
+                             textcoords='offset points', ha='right', va='bottom') 
+            plt.xlim((-abs_max, abs_max))
+            plt.ylim((-abs_max, abs_max))
+
+            plt.xlabel('u (m s$^{-1}$)')
+            plt.ylabel('v (m s$^{-1}$)')
+
+            plt.savefig(self.figpath(title) + '.png')
+
         plt.close("all")
 
     def plot_level_hists(self, use_pca, filt, norm, res, disp_res):
