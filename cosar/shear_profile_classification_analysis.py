@@ -55,6 +55,8 @@ def gen_feature_matrix(u, v, w, cape,
                        t_slice=slice(None),
                        lat_slice=slice(None),
                        lon_slice=slice(None)):
+    # TODO: This functions is TOO LONG! Factor out bits.
+
     # Explanation: slice arrays on t, lat, lon
     sliced_u = u[t_slice, :, lat_slice, lon_slice] 
     sliced_v = v[t_slice, :, lat_slice, lon_slice] 
