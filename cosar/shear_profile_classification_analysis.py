@@ -20,7 +20,8 @@ logger = getLogger('cosar.spca')
 TROPICS_SLICE = slice(48, 97)
 NH_TROPICS_SLICE = slice(48, 72)
 SH_TROPICS_SLICE = slice(73, 97)
-CLUSTERS = [5]
+# CLUSTERS = [5, 10, 15, 20]
+CLUSTERS = range(5, 21)
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 
@@ -88,6 +89,9 @@ def gen_feature_matrix(u, v, w, cape,
         # Normalize the profiles by the rotation at level 4 == 850 hPa.
         rot_at_level = rot[:, 4, :, :]
         norm_rot = rot - rot_at_level[:, None, :, :]
+        logger.debug('# profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4, :, :] < 1).sum()))
+        logger.debug('% profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4, :, :] < 1).sum() /
+                                                                    mag[:, 4, :, :].size* 100))
 
         u_norm_mag_rot = norm_mag * np.cos(norm_rot)
         v_norm_mag_rot = norm_mag * np.sin(norm_rot)
@@ -218,7 +222,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             res.orig_X, res.X, res.X_latlon, res.max_mag = gen_feature_matrix(self.u, self.v, self.w, self.cape, 
                                                                               filter_on=filt, norm=norm, **kwargs)
             if use_pca:
-                res.X_new, pca, n_pca_components = calc_pca(res.X)
+                res.X_new, res.pca, n_pca_components = calc_pca(res.X)
             else:
                 res.X_new = res.X
                 n_pca_components = res.X.shape[1]
@@ -231,6 +235,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                 # TODO: Not quite right. I need to change so that the number of bins is
                 # one more than the number of labels, 
                 # but so that the bins are aligned with the labels.
+                logger.debug('score: {}'.format(kmeans_red.score(res.X_new[:, :n_pca_components])))
                 logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
 
                 res.disp_res[n_clusters] = (n_pca_components, n_clusters, kmeans_red)
@@ -437,12 +442,63 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
 
+    def plot_pca_red(self, use_pca, filt, norm, res, disp_res):
+        pressure = self.u.coord('pressure').points
+        n_pca_components, n_clusters, kmeans_red = disp_res
+
+        for i in range(0, res.X.shape[0], int(res.X.shape[0] / 20)):
+            title_fmt = 'PCA_RED_{}_{}_{}_-{}_nclust-{}_prof-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, i)
+            profile = res.X[i]
+            pca_comp = res.X_new[i].copy()
+            pca_comp[n_pca_components:] = 0
+            plt.clf()
+            plt.plot(profile[:7], pressure, 'b-')
+            plt.plot(profile[7:], pressure, 'r-')
+            red_profile = res.pca.inverse_transform(pca_comp)
+            plt.plot(red_profile[:7], pressure, 'b--')
+            plt.plot(red_profile[7:], pressure, 'r--')
+
+            plt.ylim((pressure[-1], pressure[0]))
+            plt.savefig(self.figpath(title) + '.png')
+
+        plt.close("all")
+
+    def plot_scores(self, use_pca, filt, norm, res):
+        title_fmt = 'KMEANS_SCORES_{}_{}_{}'
+        title = title_fmt.format(use_pca, filt, norm)
+        plt.figure(title)
+        plt.clf()
+        scores = []
+        for n_clusters in CLUSTERS:
+            disp_res = res.disp_res[n_clusters]
+            n_pca_components, n_clusters, kmeans_red = disp_res
+
+            # I don't properly understand what this score is!
+            # And how it relates to e.g. explained variance in elbow plots:
+            # https://en.wikipedia.org/wiki/Elbow_method_(clustering)
+            # See also:
+            # https://stackoverflow.com/questions/15376075/cluster-analysis-in-r-determine-the-optimal-number-of-clusters/15376462#15376462
+            # Should be able to calculate Sum of Squared Error (SSE). This is then used for elbow
+            # plot.
+            scores.append(kmeans_red.score(res.X_new[:, :n_pca_components]))
+
+        plt.plot(CLUSTERS, scores)
+        plt.xlabel('# clusters')
+        plt.ylabel('score')
+
+        plt.savefig(self.figpath(title) + '.png')
+        plt.close("all")
+
     def display_results(self):
         for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
             res = self.res[(use_pca, filt, norm)]
+            self.plot_scores(use_pca, filt, norm, res)
+
             for n_clusters in CLUSTERS:
                 disp_res = res.disp_res[n_clusters]
                 # self.plot_cluster_results(use_pca, filt, norm, res, disp_res)
                 self.plot_profile_results(use_pca, filt, norm, res, disp_res)
                 self.plot_level_hists(use_pca, filt, norm, res, disp_res)
                 self.plot_geog_loc(use_pca, filt, norm, res, disp_res)
+                self.plot_pca_red(use_pca, filt, norm, res, disp_res)
