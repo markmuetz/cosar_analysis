@@ -10,6 +10,7 @@ import numpy as np
 import pylab as plt
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
+import cartopy.crs as ccrs
 
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
@@ -19,7 +20,7 @@ logger = getLogger('cosar.spca')
 TROPICS_SLICE = slice(48, 97)
 NH_TROPICS_SLICE = slice(48, 72)
 SH_TROPICS_SLICE = slice(73, 97)
-CLUSTERS = [5, 10, 20]
+CLUSTERS = [5]
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 
@@ -383,24 +384,55 @@ class ShearProfileClassificationAnalyser(Analyser):
         for cluster_index in range(n_clusters):
             keep = kmeans_red.labels_ == cluster_index
 
-            title_fmt = 'GEOG_LOC_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
-            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
-                                     cluster_index, keep.sum())
-            plt.figure(title)
-            plt.clf()
-            plt.title(title)
-
             # Get original samples based on how they've been classified.
             lat = res.X_latlon[0]
             lon = res.X_latlon[1]
             cluster_lat = lat[keep]
             cluster_lon = lon[keep]
 
-            plt.hist2d(cluster_lon, cluster_lat, bins=50, cmap='hot')
-            plt.xlim((0, 360))
-            plt.ylim((-30, 30))
-            plt.xlabel('longitude')
-            plt.ylabel('latitude')
+            title_fmt = 'GLOB_GEOG_LOC_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
+                                     cluster_index, keep.sum())
+            plt.figure(title)
+            plt.clf()
+
+            cmap = 'hot'
+            # cmap = 'autumn'
+            # cmap = 'YlOrRd'
+            bins = (49, 192)
+            r = [[-30, 30], [0, 360]]
+
+            ax = plt.axes(projection=ccrs.PlateCarree())
+            ax.set_title(title)
+            ax.set_extent((-180, 179, -40, 40))
+            # ax.set_global()
+
+            hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
+            # ax.imshow(hist, origin='upper', extent=extent,
+            # transform=ccrs.PlateCarree(), cmap=cmap)
+            # Works better than imshow.
+            ax.pcolormesh(lon, lat, hist, transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
+            ax.coastlines()
+
+            # N.B. set_xlabel will not work for cartopy axes.
+            plt.savefig(self.figpath(title) + '.png')
+
+            # Produces a very similar image.
+            title_fmt = 'IMG_GEOG_LOC_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, 
+                                     cluster_index, keep.sum())
+            plt.figure(title)
+            plt.clf()
+            plt.title(title)
+
+            extent = (-180, 180, -30, 30)
+            logger.debug('extent = {}'.format(extent))
+            plt.imshow(np.roll(hist, int(hist.shape[1] / 2), axis=1), origin='lower',
+                       extent=extent, cmap=cmap, norm=colors.LogNorm())
+            plt.xlim((-180, 180))
+            plt.ylim((-40, 40))
+            ax.set_xlabel('longitude')
+            ax.set_ylabel('latitude')
 
             plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
