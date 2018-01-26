@@ -17,6 +17,8 @@ from omnium.utils import get_cube
 logger = getLogger('cosar.spca')
 
 TROPICS_SLICE = slice(48, 97)
+NH_TROPICS_SLICE = slice(48, 72)
+SH_TROPICS_SLICE = slice(73, 97)
 CLUSTERS = [5, 10, 20]
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
