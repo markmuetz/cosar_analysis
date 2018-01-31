@@ -25,6 +25,7 @@ USE_SEEDS = True
 RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586]
 # CLUSTERS = [11]
 # CLUSTERS = [5, 10, 15, 20]
+DETAILED_CLUSTER = 11
 CLUSTERS = range(5, 21)
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
@@ -219,20 +220,17 @@ class ShearProfileClassificationAnalyser(Analyser):
         logger.info('Cube shape: {}'.format(self.u.shape))
         self.cape = get_cube(self.cubes, 5, 233)
 
+        self.options = list(itertools.product(self.pca, self.filters, self.normalization))
+
         kwargs = {'lat_slice': TROPICS_SLICE}
 
         self.res = {}
-        if USE_SEEDS:
-            random_seeds = RANDOM_SEEDS
-        else:
-            random_seeds = [0]
 
-        for use_pca, filt, norm, seed in itertools.product(self.pca, self.filters,
-                                                           self.normalization, random_seeds):
-            logger.info('Using (pca, filts, norm, seed): ({}, {}, {}, {})'.format(use_pca, filt,
-                                                                                  norm, seed))
+        for option in self.options:
+            logger.info('Using (pca, filts, norm): ({}, {}, {})'.format(*option))
             res = ShearResult()
-            self.res[(use_pca, filt, norm, seed)] = res
+            use_pca, filt, norm = option
+            self.res[(use_pca, filt, norm)] = res
 
             res.orig_X, res.X, res.X_latlon, res.max_mag = gen_feature_matrix(self.u, self.v, self.w, self.cape, 
                                                                               filter_on=filt, norm=norm, **kwargs)
@@ -244,20 +242,23 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             for n_clusters in CLUSTERS:
                 logger.info('Running for n_clusters = {}'.format(n_clusters))
-                # Calculates kmeans based on reduced (first 2) components of PCA.
-                kmeans_red = KMeans(n_clusters=n_clusters, random_state=seed) \
-                             .fit(res.X_pca[:, :n_pca_components])
-                # TODO: Not quite right. I need to change so that the number of bins is
-                # one more than the number of labels, 
-                # but so that the bins are aligned with the labels.
-                logger.debug('score: {}'.format(kmeans_red.score(res.X_pca[:, :n_pca_components])))
-                logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
+                if n_clusters == DETAILED_CLUSTER:
+                    seeds = RANDOM_SEEDS
+                else:
+                    seeds = RANDOM_SEEDS[:1]
 
-                cluster_cluster_dist = kmeans_red.transform(kmeans_red.cluster_centers_)
-                ones = np.ones((n_clusters, n_clusters))
-                cluster_cluster_dist = np.ma.masked_array(cluster_cluster_dist, np.tril(ones))
-                res.disp_res[n_clusters] = (n_pca_components, n_clusters,
-                                            kmeans_red, cluster_cluster_dist)
+                for seed in seeds:
+                    logger.debug('seed: {}'.format(seed))
+                    kmeans_red = KMeans(n_clusters=n_clusters, random_state=seed) \
+                                 .fit(res.X_pca[:, :n_pca_components])
+                    logger.debug('score: {}'.format(kmeans_red.score(res.X_pca[:, :n_pca_components])))
+                    logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
+
+                    cluster_cluster_dist = kmeans_red.transform(kmeans_red.cluster_centers_)
+                    ones = np.ones((n_clusters, n_clusters))
+                    cluster_cluster_dist = np.ma.masked_array(cluster_cluster_dist, np.tril(ones))
+                    res.disp_res[(n_clusters, seed)] = (n_pca_components, n_clusters,
+                                                        kmeans_red, cluster_cluster_dist)
 
 
     def plot_cluster_results(self, use_pca, filt, norm, seed, res, disp_res):
@@ -442,24 +443,25 @@ class ShearProfileClassificationAnalyser(Analyser):
             # N.B. set_xlabel will not work for cartopy axes.
             plt.savefig(self.figpath(title) + '.png')
 
-            # Produces a very similar image.
-            title_fmt = 'IMG_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
-            title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
-                                     cluster_index, keep.sum())
-            plt.figure(title)
-            plt.clf()
-            plt.title(title)
+            if False:
+                # Produces a very similar image.
+                title_fmt = 'IMG_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+                title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
+                                         cluster_index, keep.sum())
+                plt.figure(title)
+                plt.clf()
+                plt.title(title)
 
-            extent = (-180, 180, -30, 30)
-            logger.debug('extent = {}'.format(extent))
-            plt.imshow(np.roll(hist, int(hist.shape[1] / 2), axis=1), origin='lower',
-                       extent=extent, cmap=cmap, norm=colors.LogNorm())
-            plt.xlim((-180, 180))
-            plt.ylim((-40, 40))
-            ax.set_xlabel('longitude')
-            ax.set_ylabel('latitude')
+                extent = (-180, 180, -30, 30)
+                logger.debug('extent = {}'.format(extent))
+                plt.imshow(np.roll(hist, int(hist.shape[1] / 2), axis=1), origin='lower',
+                           extent=extent, cmap=cmap, norm=colors.LogNorm())
+                plt.xlim((-180, 180))
+                plt.ylim((-40, 40))
+                ax.set_xlabel('longitude')
+                ax.set_ylabel('latitude')
 
-            plt.savefig(self.figpath(title) + '.png')
+                plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
 
     def plot_pca_red(self, use_pca, filt, norm, seed, res, disp_res):
@@ -484,15 +486,15 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         plt.close("all")
 
-    def plot_pca_profiles(self, use_pca, filt, norm, seed, res):
+    def plot_pca_profiles(self, use_pca, filt, norm, res):
         pressure = self.u.coord('pressure').points
 
         for pca_index in range(res.pca.n_components):
             sample = res.pca.components_[pca_index]
             evr = res.pca.explained_variance_ratio_[pca_index]
 
-            title_fmt = 'PCA_PROFILE_{}_{}_{}_{}_pi-{}_evr-{}'
-            title = title_fmt.format(use_pca, filt, norm, seed, pca_index, evr)
+            title_fmt = 'PCA_PROFILE_{}_{}_{}_pi-{}_evr-{}'
+            title = title_fmt.format(use_pca, filt, norm, pca_index, evr)
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -508,14 +510,14 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         plt.close("all")
 
-    def plot_scores(self, use_pca, filt, norm, seed, res):
-        title_fmt = 'KMEANS_SCORES_{}_{}_{}_{}'
-        title = title_fmt.format(use_pca, filt, norm, seed)
+    def plot_scores(self, use_pca, filt, norm, res):
+        title_fmt = 'KMEANS_SCORES_{}_{}_{}'
+        title = title_fmt.format(use_pca, filt, norm)
         plt.figure(title)
         plt.clf()
         scores = []
         for n_clusters in CLUSTERS:
-            disp_res = res.disp_res[n_clusters]
+            disp_res = res.disp_res[(n_clusters, RANDOM_SEEDS[0])]
             n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
             # score(...) gives the -(inertia):
@@ -561,26 +563,30 @@ class ShearProfileClassificationAnalyser(Analyser):
         logger.info('SH wind angle 850 hPa - 950 hPa: {}'.format(sh_mean_angle))
 
     def display_results(self):
-        if USE_SEEDS:
-            random_seeds = RANDOM_SEEDS
-        else:
-            random_seeds = [0]
         self.display_veering_backing()
 
-        for use_pca, filt, norm, seed in itertools.product(self.pca, self.filters,
-                                                           self.normalization, random_seeds):
+        for option in self.options:
+            use_pca, filt, norm = option
+
             print_filt = '-'.join(filt)
-            res = self.res[(use_pca, filt, norm, seed)]
-            self.plot_scores(use_pca, print_filt, norm, seed, res)
+            res = self.res[(use_pca, filt, norm)]
+            self.plot_scores(use_pca, print_filt, norm, res)
+
             if use_pca:
-                self.plot_pca_profiles(use_pca, print_filt, norm, seed, res)
+                self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
             for n_clusters in CLUSTERS:
-                disp_res = res.disp_res[n_clusters]
-                # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
-                self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
-                self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res)
-                self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
-                if use_pca:
-                    self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
-                self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
+                if n_clusters == DETAILED_CLUSTER:
+                    seeds = RANDOM_SEEDS
+                else:
+                    seeds = RANDOM_SEEDS[:1]
+
+                for seed in seeds:
+                    disp_res = res.disp_res[(n_clusters, seed)]
+                    # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
+                    self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
+                    self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res)
+                    self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                    if use_pca:
+                        self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
+                    self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
