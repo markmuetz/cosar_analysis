@@ -238,10 +238,15 @@ class ShearProfileClassificationAnalyser(Analyser):
                 logger.debug('score: {}'.format(kmeans_red.score(res.X_new[:, :n_pca_components])))
                 logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
 
-                res.disp_res[n_clusters] = (n_pca_components, n_clusters, kmeans_red)
+                cluster_cluster_dist = kmeans_red.transform(kmeans_red.cluster_centers_)
+                ones = np.ones((n_clusters, n_clusters))
+                cluster_cluster_dist = np.ma.masked_array(cluster_cluster_dist, np.tril(ones))
+                res.disp_res[n_clusters] = (n_pca_components, n_clusters,
+                                            kmeans_red, cluster_cluster_dist)
+
 
     def plot_cluster_results(self, use_pca, filt, norm, res, disp_res):
-        n_pca_components, n_clusters, kmeans_red = disp_res
+        n_pca_components, n_clusters, kmeans_red, *_ = disp_res
         # Loop over all axes of PCA.
         for i in range(1, n_pca_components):
             for j in range(i):
@@ -259,7 +264,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
     def plot_profile_results(self, use_pca, filt, norm, res, disp_res):
         pressure = self.u.coord('pressure').points
-        n_pca_components, n_clusters, kmeans_red = disp_res
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
         if res.max_mag is not None:
             # De-normalize data.
@@ -353,7 +358,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
     def plot_level_hists(self, use_pca, filt, norm, res, disp_res):
         title_fmt = 'LEVEL_HISTS_{}_{}_{}_-{}_nclust-{}'
-        n_pca_components, n_clusters, kmeans_red = disp_res
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters)
 
         vels = res.X
@@ -384,7 +389,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
     def plot_geog_loc(self, use_pca, filt, norm, res, disp_res):
         pressure = self.u.coord('pressure').points
-        n_pca_components, n_clusters, kmeans_red = disp_res
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
         for cluster_index in range(n_clusters):
             keep = kmeans_red.labels_ == cluster_index
@@ -444,7 +449,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
     def plot_pca_red(self, use_pca, filt, norm, res, disp_res):
         pressure = self.u.coord('pressure').points
-        n_pca_components, n_clusters, kmeans_red = disp_res
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
         for i in range(0, res.X.shape[0], int(res.X.shape[0] / 20)):
             title_fmt = 'PCA_RED_{}_{}_{}_-{}_nclust-{}_prof-{}'
@@ -472,7 +477,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         scores = []
         for n_clusters in CLUSTERS:
             disp_res = res.disp_res[n_clusters]
-            n_pca_components, n_clusters, kmeans_red = disp_res
+            n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
             # I don't properly understand what this score is!
             # And how it relates to e.g. explained variance in elbow plots:
@@ -490,6 +495,20 @@ class ShearProfileClassificationAnalyser(Analyser):
         plt.savefig(self.figpath(title) + '.png')
         plt.close("all")
 
+    def display_cluster_cluster_dist(self, use_pca, filt, norm, res, disp_res):
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        title_fmt = 'CLUST_CLUST_DIST_{}_{}_{}_-{}_nclust-{}'
+        title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters)
+        np_filename = self.figpath(title) + '.np'
+
+        ones = np.ones((n_clusters, n_clusters))
+        max_dist_index = np.unravel_index(np.argmax(cc_dist), ones.shape)
+        min_dist_index = np.unravel_index(np.argmin(cc_dist), ones.shape)
+        logger.debug('max_dist: {}, {}'.format(max_dist_index, cc_dist.max()))
+        logger.debug('min_dist: {}, {}'.format(min_dist_index, cc_dist.min()))
+
+        cc_dist.dump(np_filename)
+
     def display_results(self):
         for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
             print_filt = '-'.join(filt)
@@ -503,3 +522,5 @@ class ShearProfileClassificationAnalyser(Analyser):
                 self.plot_level_hists(use_pca, print_filt, norm, res, disp_res)
                 self.plot_geog_loc(use_pca, print_filt, norm, res, disp_res)
                 self.plot_pca_red(use_pca, print_filt, norm, res, disp_res)
+                self.display_cluster_cluster_dist(use_pca, print_filt, norm, res, disp_res)
+
