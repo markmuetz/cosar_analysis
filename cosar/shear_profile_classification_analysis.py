@@ -20,8 +20,8 @@ logger = getLogger('cosar.spca')
 TROPICS_SLICE = slice(48, 97)
 NH_TROPICS_SLICE = slice(48, 72)
 SH_TROPICS_SLICE = slice(73, 97)
-# CLUSTERS = [5, 10, 15, 20]
-CLUSTERS = range(5, 21)
+CLUSTERS = [5, 10, 15, 20]
+# CLUSTERS = range(5, 21)
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 
@@ -47,9 +47,9 @@ def calc_pca(X, n_pca_components=None, expl_var_min=EXPL_VAR_MIN):
         n_pca_components = i + 1
     logger.info('N_PCA_COMP: {}'.format(n_pca_components))
     # Calculates new matrix based on projection onto PCA components.
-    X_new = pca.fit_transform(X)
+    X_pca = pca.fit_transform(X)
 
-    return X_new, pca, n_pca_components
+    return X_pca, pca, n_pca_components
 
 
 def gen_feature_matrix(u, v, w, cape,
@@ -185,7 +185,7 @@ class ShearResult(object):
         self.X = None
         self.X_latlon = None
         self.max_mag = None
-        self.X_new = None
+        self.X_pca = None
         self.pca = None
         self.n_pca_components = None
         self.disp_res = {}
@@ -222,20 +222,20 @@ class ShearProfileClassificationAnalyser(Analyser):
             res.orig_X, res.X, res.X_latlon, res.max_mag = gen_feature_matrix(self.u, self.v, self.w, self.cape, 
                                                                               filter_on=filt, norm=norm, **kwargs)
             if use_pca:
-                res.X_new, res.pca, n_pca_components = calc_pca(res.X)
+                res.X_pca, res.pca, n_pca_components = calc_pca(res.X)
             else:
-                res.X_new = res.X
+                res.X_pca = res.X
                 n_pca_components = res.X.shape[1]
 
             for n_clusters in CLUSTERS:
                 logger.info('Running for n_clusters = {}'.format(n_clusters))
                 # Calculates kmeans based on reduced (first 2) components of PCA.
                 kmeans_red = KMeans(n_clusters=n_clusters, random_state=0) \
-                             .fit(res.X_new[:, :n_pca_components])
+                             .fit(res.X_pca[:, :n_pca_components])
                 # TODO: Not quite right. I need to change so that the number of bins is
                 # one more than the number of labels, 
                 # but so that the bins are aligned with the labels.
-                logger.debug('score: {}'.format(kmeans_red.score(res.X_new[:, :n_pca_components])))
+                logger.debug('score: {}'.format(kmeans_red.score(res.X_pca[:, :n_pca_components])))
                 logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
 
                 cluster_cluster_dist = kmeans_red.transform(kmeans_red.cluster_centers_)
@@ -256,7 +256,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                 plt.clf()
                 plt.title(title)
 
-                plt.scatter(res.X_new[:, i], res.X_new[:, j], c=kmeans_red.labels_)
+                plt.scatter(res.X_pca[:, i], res.X_pca[:, j], c=kmeans_red.labels_)
 
                 plt.savefig(self.figpath(title) + '.png')
 
@@ -455,7 +455,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             title_fmt = 'PCA_RED_{}_{}_{}_-{}_nclust-{}_prof-{}'
             title = title_fmt.format(use_pca, filt, norm, n_pca_components, n_clusters, i)
             profile = res.X[i]
-            pca_comp = res.X_new[i].copy()
+            pca_comp = res.X_pca[i].copy()
             pca_comp[n_pca_components:] = 0
             plt.clf()
             plt.plot(profile[:7], pressure, 'b-')
@@ -465,6 +465,30 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.plot(red_profile[7:], pressure, 'r--')
 
             plt.ylim((pressure[-1], pressure[0]))
+            plt.savefig(self.figpath(title) + '.png')
+
+        plt.close("all")
+
+    def plot_pca_profiles(self, use_pca, filt, norm, res):
+        pressure = self.u.coord('pressure').points
+
+        for pca_index in range(res.pca.n_components):
+            sample = res.pca.components_[pca_index]
+            evr = res.pca.explained_variance_ratio_[pca_index]
+
+            title_fmt = 'PCA_PROFILE_{}_{}_{}_pi-{}_evr-{}'
+            title = title_fmt.format(use_pca, filt, norm, pca_index, evr)
+            plt.figure(title)
+            plt.clf()
+            plt.title(title)
+
+            pca_u, pca_v = sample[:7], sample[7:]
+            plt.plot(pca_u, pressure, 'b-', label='pca_u')
+            plt.plot(pca_v, pressure, 'r-', label='pca_v')
+
+            plt.xlim((-1, 1))
+            plt.ylim((pressure[-1], pressure[0]))
+            plt.legend(loc='best')
             plt.savefig(self.figpath(title) + '.png')
 
         plt.close("all")
@@ -479,14 +503,10 @@ class ShearProfileClassificationAnalyser(Analyser):
             disp_res = res.disp_res[n_clusters]
             n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
-            # I don't properly understand what this score is!
-            # And how it relates to e.g. explained variance in elbow plots:
-            # https://en.wikipedia.org/wiki/Elbow_method_(clustering)
-            # See also:
-            # https://stackoverflow.com/questions/15376075/cluster-analysis-in-r-determine-the-optimal-number-of-clusters/15376462#15376462
-            # Should be able to calculate Sum of Squared Error (SSE). This is then used for elbow
-            # plot.
-            scores.append(kmeans_red.score(res.X_new[:, :n_pca_components]))
+            # score(...) gives the -(inertia):
+            # http://scikit-learn.org/stable/modules/clustering.html#k-means
+            # This is the "within-cluster sum of squares".
+            scores.append(kmeans_red.score(res.X_pca[:, :n_pca_components]))
 
         plt.plot(CLUSTERS, scores)
         plt.xlabel('# clusters')
@@ -514,6 +534,8 @@ class ShearProfileClassificationAnalyser(Analyser):
             print_filt = '-'.join(filt)
             res = self.res[(use_pca, filt, norm)]
             self.plot_scores(use_pca, print_filt, norm, res)
+            if use_pca:
+                self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
             for n_clusters in CLUSTERS:
                 disp_res = res.disp_res[n_clusters]
@@ -521,6 +543,6 @@ class ShearProfileClassificationAnalyser(Analyser):
                 self.plot_profile_results(use_pca, print_filt, norm, res, disp_res)
                 self.plot_level_hists(use_pca, print_filt, norm, res, disp_res)
                 self.plot_geog_loc(use_pca, print_filt, norm, res, disp_res)
-                self.plot_pca_red(use_pca, print_filt, norm, res, disp_res)
+                if use_pca:
+                    self.plot_pca_red(use_pca, print_filt, norm, res, disp_res)
                 self.display_cluster_cluster_dist(use_pca, print_filt, norm, res, disp_res)
-
