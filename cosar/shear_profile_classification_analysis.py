@@ -26,7 +26,7 @@ RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586]
 # CLUSTERS = [11]
 # CLUSTERS = [5, 10, 15, 20]
 DETAILED_CLUSTER = 11
-CLUSTERS = range(5, 21)
+CLUSTERS = range(10, 13)
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 
@@ -212,6 +212,7 @@ class ShearProfileClassificationAnalyser(Analyser):
     # filters = [('cape',), ('cape', 'shear')]
     filters = [('cape', 'shear')]
     normalization = ['magrot']
+    loc = ['tropics', 'NH', 'SH']
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -220,17 +221,22 @@ class ShearProfileClassificationAnalyser(Analyser):
         logger.info('Cube shape: {}'.format(self.u.shape))
         self.cape = get_cube(self.cubes, 5, 233)
 
-        self.options = list(itertools.product(self.pca, self.filters, self.normalization))
-
-        kwargs = {'lat_slice': TROPICS_SLICE}
+        self.options = list(itertools.product(self.pca, self.filters, self.normalization, self.loc))
 
         self.res = {}
 
         for option in self.options:
-            logger.info('Using (pca, filts, norm): ({}, {}, {})'.format(*option))
+            logger.info('Using (pca, filts, norm, loc): ({}, {}, {}, {})'.format(*option))
             res = ShearResult()
-            use_pca, filt, norm = option
-            self.res[(use_pca, filt, norm)] = res
+            use_pca, filt, norm, loc = option
+            self.res[option] = res
+
+            if loc == 'tropics':
+                kwargs = {'lat_slice': TROPICS_SLICE}
+            elif loc == 'NH':
+                kwargs = {'lat_slice': NH_TROPICS_SLICE}
+            elif loc == 'SH':
+                kwargs = {'lat_slice': SH_TROPICS_SLICE}
 
             res.orig_X, res.X, res.X_latlon, res.max_mag = gen_feature_matrix(self.u, self.v, self.w, self.cape, 
                                                                               filter_on=filt, norm=norm, **kwargs)
@@ -241,11 +247,16 @@ class ShearProfileClassificationAnalyser(Analyser):
                 n_pca_components = res.X.shape[1]
 
             for n_clusters in CLUSTERS:
-                logger.info('Running for n_clusters = {}'.format(n_clusters))
                 if n_clusters == DETAILED_CLUSTER:
-                    seeds = RANDOM_SEEDS
+                    if loc == 'tropics':
+                        seeds = RANDOM_SEEDS
+                    else:
+                        seeds = RANDOM_SEEDS[:1]
                 else:
+                    if loc != 'tropics':
+                        continue
                     seeds = RANDOM_SEEDS[:1]
+                logger.info('Running for n_clusters = {}'.format(n_clusters))
 
                 for seed in seeds:
                     logger.debug('seed: {}'.format(seed))
@@ -372,10 +383,10 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         plt.close("all")
 
-    def plot_level_hists(self, use_pca, filt, norm, seed, res, disp_res):
-        title_fmt = 'LEVEL_HISTS_{}_{}_{}_{}_-{}_nclust-{}'
+    def plot_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
+        title_fmt = 'LEVEL_HISTS_{}_{}_{}_{}_{}_-{}_nclust-{}'
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
-        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
+        title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
         vels = res.X
         u = vels[:, :7]
@@ -566,26 +577,33 @@ class ShearProfileClassificationAnalyser(Analyser):
         self.display_veering_backing()
 
         for option in self.options:
-            use_pca, filt, norm = option
+            use_pca, filt, norm, loc = option
 
             print_filt = '-'.join(filt)
-            res = self.res[(use_pca, filt, norm)]
-            self.plot_scores(use_pca, print_filt, norm, res)
+            res = self.res[(use_pca, filt, norm, loc)]
+            if loc == 'tropics':
+                self.plot_scores(use_pca, print_filt, norm, res)
 
-            if use_pca:
+            if use_pca and loc == 'tropics':
                 self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
             for n_clusters in CLUSTERS:
                 if n_clusters == DETAILED_CLUSTER:
-                    seeds = RANDOM_SEEDS
+                    import ipdb; ipdb.set_trace()
+                    if loc == 'tropics':
+                        seeds = RANDOM_SEEDS
+                    else:
+                        seeds = RANDOM_SEEDS[:1]
                 else:
+                    if loc != 'tropics':
+                        continue
                     seeds = RANDOM_SEEDS[:1]
 
                 for seed in seeds:
                     disp_res = res.disp_res[(n_clusters, seed)]
                     # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                     self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
-                    self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res)
+                    self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
                     self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if use_pca:
                         self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
