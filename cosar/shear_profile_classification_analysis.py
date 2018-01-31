@@ -492,13 +492,14 @@ class ShearProfileClassificationAnalyser(Analyser):
 
     def display_results(self):
         for use_pca, filt, norm in itertools.product(self.pca, self.filters, self.normalization):
+            print_filt = '-'.join(filt)
             res = self.res[(use_pca, filt, norm)]
-            self.plot_scores(use_pca, filt, norm, res)
+            self.plot_scores(use_pca, print_filt, norm, res)
 
             for n_clusters in CLUSTERS:
                 disp_res = res.disp_res[n_clusters]
-                # self.plot_cluster_results(use_pca, filt, norm, res, disp_res)
-                self.plot_profile_results(use_pca, filt, norm, res, disp_res)
-                self.plot_level_hists(use_pca, filt, norm, res, disp_res)
-                self.plot_geog_loc(use_pca, filt, norm, res, disp_res)
-                self.plot_pca_red(use_pca, filt, norm, res, disp_res)
+                # self.plot_cluster_results(use_pca, print_filt, norm, res, disp_res)
+                self.plot_profile_results(use_pca, print_filt, norm, res, disp_res)
+                self.plot_level_hists(use_pca, print_filt, norm, res, disp_res)
+                self.plot_geog_loc(use_pca, print_filt, norm, res, disp_res)
+                self.plot_pca_red(use_pca, print_filt, norm, res, disp_res)
