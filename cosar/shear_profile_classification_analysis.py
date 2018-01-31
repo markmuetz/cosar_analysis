@@ -24,8 +24,8 @@ CLUSTERS = [5, 10, 15, 20]
 USE_SEEDS = True
 RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586]
 # CLUSTERS = [11]
-CLUSTERS = [5, 10, 15, 20]
-# CLUSTERS = range(5, 21)
+# CLUSTERS = [5, 10, 15, 20]
+CLUSTERS = range(5, 21)
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 
@@ -544,11 +544,28 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         cc_dist.dump(np_filename)
 
+    def display_veering_backing(self):
+        u = self.u
+        v = self.v
+
+        u950 = u[:, -1]
+        u850 = u[:, -3]
+        v950 = v[:, -1]
+        v850 = v[:, -3]
+
+        r950 = np.arctan2(v950.data, u950.data)
+        r850 = np.arctan2(v850.data, u850.data)
+        nh_mean_angle = (r850[:, NH_TROPICS_SLICE, :] - r950[:, NH_TROPICS_SLICE, :]).mean()
+        sh_mean_angle = (r850[:, SH_TROPICS_SLICE, :] - r950[:, SH_TROPICS_SLICE, :]).mean()
+        logger.info('NH wind angle 850 hPa - 950 hPa: {}'.format(nh_mean_angle))
+        logger.info('SH wind angle 850 hPa - 950 hPa: {}'.format(sh_mean_angle))
+
     def display_results(self):
         if USE_SEEDS:
             random_seeds = RANDOM_SEEDS
         else:
             random_seeds = [0]
+        self.display_veering_backing()
 
         for use_pca, filt, norm, seed in itertools.product(self.pca, self.filters,
                                                            self.normalization, random_seeds):
