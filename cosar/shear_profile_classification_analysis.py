@@ -589,7 +589,6 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             for n_clusters in CLUSTERS:
                 if n_clusters == DETAILED_CLUSTER:
-                    import ipdb; ipdb.set_trace()
                     if loc == 'tropics':
                         seeds = RANDOM_SEEDS
                     else:
