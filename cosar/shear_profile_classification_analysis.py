@@ -408,17 +408,18 @@ class ShearProfileClassificationAnalyser(Analyser):
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
 
-        plt.figure(figsize=(5, 3))
-        gs = gridspec.GridSpec(len(clusters_to_disp), 4)
+        fig = plt.figure(figsize=(5, 3))
+        gs = gridspec.GridSpec(len(clusters_to_disp), 5)
         axes1 = []
         axes2 = []
         for ax_index, i in enumerate(clusters_to_disp):
             if ax_index == 0:
                 axes1.append(plt.subplot(gs[ax_index, 0]))
-                axes2.append(plt.subplot(gs[ax_index, 1:], projection=ccrs.PlateCarree()))
+                axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
             else:
                 axes1.append(plt.subplot(gs[ax_index, 0]))
-                axes2.append(plt.subplot(gs[ax_index, 1:], projection=ccrs.PlateCarree()))
+                axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
+        colorbar_ax = plt.subplot(gs[:, 4])
 
         title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
@@ -454,6 +455,12 @@ class ShearProfileClassificationAnalyser(Analyser):
             v_mean = v.mean(axis=0)
 
             ax1.plot(u_mean, v_mean, 'k-')
+
+            ax1.text(0.05, 0.01, '{}'.format(cluster_index + 1),
+                    verticalalignment='bottom', horizontalalignment='left',
+                    transform=ax1.transAxes,
+                    color='black', fontsize=15)
+
             for i in range(len(u_mean)):
                 u = u_mean[i]
                 v = v_mean[i]
@@ -474,7 +481,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                 ax1.get_xaxis().set_ticklabels([])
             else:
                 ax1.set_xlabel('u (m s$^{-1}$)')
-                ax2.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
+                ax2.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
 
             # Get original samples based on how they've been classified.
 
@@ -493,6 +500,8 @@ class ShearProfileClassificationAnalyser(Analyser):
             ax2.pcolormesh(lon, lat, masked_hist, vmax=hist_max, vmin=hist_min,
                            transform=ccrs.PlateCarree(), cmap=cmap)
             ax2.coastlines()
+
+        cbar = fig.colorbar(colorbar_ax, ticks=[hist_min, hist_max], cmap=cmap)
 
         # plt.tight_layout()
         plt.savefig(self.figpath(title) + '.png')
