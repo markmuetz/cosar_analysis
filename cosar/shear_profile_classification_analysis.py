@@ -12,6 +12,7 @@ import pylab as plt
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 import cartopy.crs as ccrs
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
@@ -389,6 +390,9 @@ class ShearProfileClassificationAnalyser(Analyser):
         pressure = self.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
+        # clusters_to_disp = list(range(n_clusters))
+        clusters_to_disp = [3, 5, 8]
+
         if res.max_mag is not None:
             # De-normalize data.
             norm_u = res.X[:, :7]
@@ -404,24 +408,44 @@ class ShearProfileClassificationAnalyser(Analyser):
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
 
-        plt.figure(figsize=(8, 10))
-        gs = gridspec.GridSpec(n_clusters, 4)
+        plt.figure(figsize=(5, 3))
+        gs = gridspec.GridSpec(len(clusters_to_disp), 4)
         axes1 = []
         axes2 = []
-        for i in range(n_clusters):
-            axes1.append(plt.subplot(gs[i, 0]))
-            axes2.append(plt.subplot(gs[i, 1:], projection=ccrs.PlateCarree()))
-            # axes1.append(plt.subplot(n_clusters, 2, (2 * i) + 1))
-            # axes2.append(plt.subplot(n_clusters, 2, (2 * i) + 2, projection=ccrs.PlateCarree()))
+        for ax_index, i in enumerate(clusters_to_disp):
+            if ax_index == 0:
+                axes1.append(plt.subplot(gs[ax_index, 0]))
+                axes2.append(plt.subplot(gs[ax_index, 1:], projection=ccrs.PlateCarree()))
+            else:
+                axes1.append(plt.subplot(gs[ax_index, 0]))
+                axes2.append(plt.subplot(gs[ax_index, 1:], projection=ccrs.PlateCarree()))
 
         title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
-        for cluster_index in range(n_clusters):
+        r = [[-30, 30], [0, 360]]
+
+        hists_latlon = []
+        for ax_index, cluster_index in enumerate(clusters_to_disp):
+            keep = kmeans_red.labels_ == cluster_index
+            # Get original samples based on how they've been classified.
+            lat = res.X_latlon[0]
+            lon = res.X_latlon[1]
+            cluster_lat = lat[keep]
+            cluster_lon = lon[keep]
+
+            bins = (49, 192)
+            hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
+            hists_latlon.append((hist, lat, lon))
+
+        hist_max = np.max([h[0].max() for h in hists_latlon])
+        hist_min = np.min([h[0].min() for h in hists_latlon])
+
+        for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = kmeans_red.labels_ == cluster_index
 
-            ax1 = axes1[cluster_index]
-            ax2 = axes2[cluster_index]
+            ax1 = axes1[ax_index]
+            ax2 = axes2[ax_index]
 
             u = all_u[keep]
             v = all_v[keep]
@@ -435,31 +459,42 @@ class ShearProfileClassificationAnalyser(Analyser):
                 v = v_mean[i]
                 ax1.annotate('{}'.format(7 - i), xy=(u, v), xytext=(-2, 2),
                              textcoords='offset points', ha='right', va='bottom') 
-            ax1.set_xlim((-abs_max, abs_max))
-            ax1.set_ylim((-abs_max, abs_max))
+            ax1.set_xlim((-10, 22))
+            ax1.set_ylim((-6, 6))
+            ax1.set_ylabel('v (m s$^{-1}$)')
+
+            ax2.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+            ax2.yaxis.tick_right()
+
+            lon_formatter = LongitudeFormatter(zero_direction_label=True)
+            lat_formatter = LatitudeFormatter()
+            ax2.xaxis.set_major_formatter(lon_formatter)
+            ax2.yaxis.set_major_formatter(lat_formatter)
+            if ax_index != len(clusters_to_disp) - 1:
+                ax1.get_xaxis().set_ticklabels([])
+            else:
+                ax1.set_xlabel('u (m s$^{-1}$)')
+                ax2.set_xticks([-180, -120, -60, 0, 60, 120, 180], crs=ccrs.PlateCarree())
 
             # Get original samples based on how they've been classified.
-            lat = res.X_latlon[0]
-            lon = res.X_latlon[1]
-            cluster_lat = lat[keep]
-            cluster_lon = lon[keep]
 
-            cmap = 'hot'
             # cmap = 'autumn'
             # cmap = 'YlOrRd'
-            bins = (49, 192)
-            r = [[-30, 30], [0, 360]]
-
-            ax2.set_extent((-180, 179, -40, 40))
+            ax2.set_extent((-180, 179, -30, 30))
             # ax.set_global()
+            hist, lat, lon = hists_latlon[ax_index]
+            # import ipdb; ipdb.set_trace()
 
-            hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
             # ax.imshow(hist, origin='upper', extent=extent,
             # transform=ccrs.PlateCarree(), cmap=cmap)
             # Works better than imshow.
-            ax2.pcolormesh(lon, lat, hist, transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
+            cmap = 'hot'
+            masked_hist = np.ma.masked_array(hist, hist == 0)
+            ax2.pcolormesh(lon, lat, masked_hist, vmax=hist_max, vmin=hist_min,
+                           transform=ccrs.PlateCarree(), cmap=cmap)
             ax2.coastlines()
 
+        # plt.tight_layout()
         plt.savefig(self.figpath(title) + '.png')
 
         plt.close("all")
@@ -663,10 +698,12 @@ class ShearProfileClassificationAnalyser(Analyser):
             print_filt = '-'.join(filt)
             res = self.res[(use_pca, filt, norm, loc)]
             if loc == 'tropics':
-                self.plot_scores(use_pca, print_filt, norm, res)
+                # self.plot_scores(use_pca, print_filt, norm, res)
+                pass
 
             if use_pca and loc == 'tropics':
-                self.plot_pca_profiles(use_pca, print_filt, norm, res)
+                # self.plot_pca_profiles(use_pca, print_filt, norm, res)
+                pass
 
             for n_clusters in CLUSTERS:
                 if n_clusters == DETAILED_CLUSTER:
@@ -681,13 +718,14 @@ class ShearProfileClassificationAnalyser(Analyser):
 
                 for seed in seeds:
                     disp_res = res.disp_res[(n_clusters, seed)]
-                    self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
-                    if loc != 'tropics':
-                        self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
-                        self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
-                        self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                    # self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
+
+                    if loc == 'tropics':
+                        # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
+                        # self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
+                        # self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                         self.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                         if use_pca:
-                            self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
+                            # self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
                             pass
-                        self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
+                        # self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
