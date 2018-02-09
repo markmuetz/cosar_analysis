@@ -612,6 +612,40 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         plt.close("all")
 
+    def plot_orig_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
+        title_fmt = 'ORIG_LEVEL_HISTS_{}_{}_{}_{}_{}_-{}_nclust-{}'
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
+
+        vels = res.orig_X
+        u = vels[:, :7]
+        v = vels[:, 7:]
+
+        min_u = u.min()
+        max_u = u.max()
+        min_v = v.min()
+        max_v = v.max()
+        absmax_uv = np.max(np.abs([min_u, max_u, min_v, max_v]))
+
+        pressure = self.u.coord('pressure').points
+        f, axes = plt.subplots(1, u.shape[1], sharey=True, figsize=(10, 2))
+        f.subplots_adjust(bottom=0.25)
+        # TODO: need to do np.histogram2d, and work out max/mins in advance of plotting.
+        # Need to add colorbar to last ax.
+        for i in range(u.shape[1]):
+            ax = axes[i]
+            ax.hist2d(u[:, -(i + 1)], v[:, -(i + 1)], bins=100, cmap='hot',
+                      norm=colors.LogNorm())
+            ax.set_title('{0:0.0f} hPa'.format(pressure[-(i + 1)]))
+            ax.set_xlim((-absmax_uv, absmax_uv))
+            ax.set_ylim((-absmax_uv, absmax_uv))
+            ax.set_xlabel('u (m s$^{-1}$)')
+            if i == 0:
+                ax.set_ylabel('v (m s$^{-1}$)')
+
+        plt.savefig(self.figpath(title) + '.png')
+        plt.close("all")
+
     def plot_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
         title_fmt = 'LEVEL_HISTS_{}_{}_{}_{}_{}_-{}_nclust-{}'
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
@@ -865,7 +899,8 @@ class ShearProfileClassificationAnalyser(Analyser):
 
                 for seed in seeds:
                     disp_res = res.disp_res[(n_clusters, seed)]
-                    # self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
+                    self.plot_orig_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
+                    self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
 
                     if loc == 'tropics':
                         # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
