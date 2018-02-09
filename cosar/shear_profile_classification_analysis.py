@@ -94,7 +94,6 @@ def gen_feature_matrix(u, v, w, cape,
         max_mag = mag.max(axis=(0, 2, 3))
         logger.debug('max_mag = {}'.format(max_mag))
         norm_mag = mag / max_mag[None, :, None, None]
-        # import ipdb; ipdb.set_trace()
         u_norm_mag = norm_mag * np.cos(rot)
         v_norm_mag = norm_mag * np.sin(rot)
 
@@ -408,18 +407,16 @@ class ShearProfileClassificationAnalyser(Analyser):
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
 
-        fig = plt.figure(figsize=(5, 3))
-        gs = gridspec.GridSpec(len(clusters_to_disp), 5)
+        fig = plt.figure(figsize=(7, 3))
+        fig.subplots_adjust(bottom=0.15)
+        gs = gridspec.GridSpec(len(clusters_to_disp), 5, width_ratios=[1, 1, 1, 1, 0.4])
+        cmap = 'autumn'
         axes1 = []
         axes2 = []
         for ax_index, i in enumerate(clusters_to_disp):
-            if ax_index == 0:
-                axes1.append(plt.subplot(gs[ax_index, 0]))
-                axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
-            else:
-                axes1.append(plt.subplot(gs[ax_index, 0]))
-                axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
-        colorbar_ax = plt.subplot(gs[:, 4])
+            axes1.append(plt.subplot(gs[ax_index, 0]))
+            axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
+        colorbar_ax = fig.add_axes([0.9, 0.1, 0.02, 0.8])
 
         title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
@@ -442,6 +439,11 @@ class ShearProfileClassificationAnalyser(Analyser):
         hist_max = np.max([h[0].max() for h in hists_latlon])
         hist_min = np.min([h[0].min() for h in hists_latlon])
 
+        xy_pos_map = {
+            3: [(-2, -12), (1, -12), (3, -12), (6, -12), (10, -4), (6, 0), (4, 0)],
+            5: [(-6, 8), (-1, 6), (0, 6), (-2, -10), (2, -10), (6, -2), (3, 6)],
+            8: [(-4, -12), (0, -12), (4, -8), (4, 0), (-10, 0), (-2, 2), (10, -4)],
+        }
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = kmeans_red.labels_ == cluster_index
 
@@ -464,9 +466,17 @@ class ShearProfileClassificationAnalyser(Analyser):
             for i in range(len(u_mean)):
                 u = u_mean[i]
                 v = v_mean[i]
-                ax1.annotate('{}'.format(7 - i), xy=(u, v), xytext=(-2, 2),
-                             textcoords='offset points', ha='right', va='bottom') 
-            ax1.set_xlim((-10, 22))
+                # ax1.plot(u, v, 'k+')
+
+                if cluster_index in xy_pos_map:
+                    xy_pos = xy_pos_map[cluster_index][i]
+                else:
+                    xy_pos = (-2, 2)
+
+                if i == 0 or i == len(u_mean) -1:
+                    ax1.annotate('{}'.format(7 - i), xy=(u, v), xytext=xy_pos,
+                                 textcoords='offset points')
+            ax1.set_xlim((-10, 25))
             ax1.set_ylim((-6, 6))
             ax1.set_ylabel('v (m s$^{-1}$)')
 
@@ -490,18 +500,18 @@ class ShearProfileClassificationAnalyser(Analyser):
             ax2.set_extent((-180, 179, -30, 30))
             # ax.set_global()
             hist, lat, lon = hists_latlon[ax_index]
-            # import ipdb; ipdb.set_trace()
 
             # ax.imshow(hist, origin='upper', extent=extent,
             # transform=ccrs.PlateCarree(), cmap=cmap)
             # Works better than imshow.
-            cmap = 'hot'
             masked_hist = np.ma.masked_array(hist, hist == 0)
-            ax2.pcolormesh(lon, lat, masked_hist, vmax=hist_max, vmin=hist_min,
-                           transform=ccrs.PlateCarree(), cmap=cmap)
+            img = ax2.pcolormesh(lon, lat, masked_hist, vmin=1, vmax=hist_max,
+                                 transform=ccrs.PlateCarree(), cmap=cmap)
             ax2.coastlines()
 
-        cbar = fig.colorbar(colorbar_ax, ticks=[hist_min, hist_max], cmap=cmap)
+        cbar = fig.colorbar(img, cax=colorbar_ax, ticks=[1, hist_max],
+                            cmap=cmap)
+        cbar.set_clim(1, hist_max)
 
         # plt.tight_layout()
         plt.savefig(self.figpath(title) + '.png')
@@ -558,8 +568,8 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.figure(title)
             plt.clf()
 
-            cmap = 'hot'
-            # cmap = 'autumn'
+            # cmap = 'hot'
+            cmap = 'autumn'
             # cmap = 'YlOrRd'
             bins = (49, 192)
             r = [[-30, 30], [0, 360]]
