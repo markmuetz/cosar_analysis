@@ -543,8 +543,6 @@ class ShearProfileClassificationAnalyser(Analyser):
         # [3, 1], the one with the hidden axis below it.
         fig, axes = plt.subplots(3, 4, sharey=True)
 
-        plt.setp(axes, xticks=[-10, 0, 20])
-
         for cluster_index in range(n_clusters):
             ax = axes.flatten()[cluster_index]
 
@@ -566,7 +564,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             v_p25, v_p75 = np.percentile(v, (25, 75), axis=0)
 
             # ax.set_title(cluster_index)
-            ax.set_yticks([950, 800, 700, 600, 500])
+            ax.set_yticks([900, 800, 700, 600, 500])
 
             ax.plot(u_p25, pressure, 'b:')
             ax.plot(u_p75, pressure, 'b:')
@@ -583,7 +581,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             ax.set_xlim((-10, 35))
             ax.set_ylim((pressure.max(), pressure.min()))
-            ax.set_xticks([-10, 0, 20])
+            ax.set_xticks([-10, 0, 10, 20, 30])
             # ax.set_xlabel('wind speed (m s$^{-1}$)')
             # ax.set_ylabel('pressure (hPa)')
 
@@ -600,6 +598,8 @@ class ShearProfileClassificationAnalyser(Analyser):
                    verticalalignment='bottom', horizontalalignment='right',
                    transform=ax.transAxes,
                    color='black', fontsize=15)
+            if cluster_index == 10:
+                ax.legend(loc=[0.86, 0.1])
 
 
         # plt.tight_layout()
@@ -750,6 +750,39 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         plt.close("all")
 
+    def plot_four_pca_profiles(self, use_pca, filt, norm, res):
+        pressure = self.u.coord('pressure').points
+
+        fig, axes = plt.subplots(1, 4, sharey=True, figsize=(5, 2))
+        fig.subplots_adjust(bottom=0.25)
+        for pca_index in range(4):
+            ax = axes[pca_index]
+            ax.set_yticks([900, 800, 700, 600, 500])
+            ax.set_title('PC{}'.format(pca_index + 1))
+            if pca_index == 0:
+                ax.set_ylabel('pressure (hPa)')
+
+            if pca_index == 1:
+                ax.set_xlabel('          PCA magnitude')
+
+            sample = res.pca.components_[pca_index]
+
+            pca_u, pca_v = sample[:7], sample[7:]
+            ax.plot(pca_u, pressure, 'b-', label='u')
+            ax.plot(pca_v, pressure, 'r-', label='v')
+
+            ax.set_xlim((-1, 1))
+            ax.set_ylim((pressure[-1], pressure[0]))
+
+            if pca_index == 3:
+                plt.legend(loc=[0.86, 0.8])
+
+        title_fmt = 'FOUR_PCA_PROFILES_{}_{}'
+        title = title_fmt.format(use_pca, filt)
+        plt.savefig(self.figpath(title) + '.png')
+
+        plt.close("all")
+
     def plot_scores(self, use_pca, filt, norm, res):
         title_fmt = 'KMEANS_SCORES_{}_{}_{}'
         title = title_fmt.format(use_pca, filt, norm)
@@ -815,6 +848,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                 pass
 
             if use_pca and loc == 'tropics':
+                self.plot_four_pca_profiles(use_pca, print_filt, norm, res)
                 # self.plot_pca_profiles(use_pca, print_filt, norm, res)
                 pass
 
