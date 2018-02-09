@@ -2,6 +2,7 @@ import os
 from logging import getLogger
 import random
 import itertools
+import math
 
 import matplotlib
 matplotlib.use('agg')
@@ -354,7 +355,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                     plt.plot(u, pressure, 'b')
                     plt.plot(v, pressure, 'r')
 
-            plt.xlim((-abs_max, abs_max))
+            plt.xlim((-10, 30))
             plt.ylim((pressure.max(), pressure.min()))
             plt.xlabel('wind speed (m s$^{-1}$)')
             plt.ylabel('pressure (hPa)')
@@ -458,7 +459,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             ax1.plot(u_mean, v_mean, 'k-')
 
-            ax1.text(0.05, 0.01, '{}'.format(cluster_index + 1),
+            ax1.text(0.05, 0.01, 'C{}'.format(cluster_index + 1),
                     verticalalignment='bottom', horizontalalignment='left',
                     transform=ax1.transAxes,
                     color='black', fontsize=15)
@@ -478,7 +479,8 @@ class ShearProfileClassificationAnalyser(Analyser):
                                  textcoords='offset points')
             ax1.set_xlim((-10, 25))
             ax1.set_ylim((-6, 6))
-            ax1.set_ylabel('v (m s$^{-1}$)')
+            if ax_index == 1:
+                ax1.set_ylabel('v (m s$^{-1}$)')
 
             ax2.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
             ax2.yaxis.tick_right()
@@ -514,6 +516,98 @@ class ShearProfileClassificationAnalyser(Analyser):
         cbar.set_clim(1, hist_max)
 
         # plt.tight_layout()
+        plt.savefig(self.figpath(title) + '.png')
+
+        plt.close("all")
+
+    def plot_all_profiles(self, use_pca, filt, norm, seed, res, disp_res):
+        pressure = self.u.coord('pressure').points
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+
+        if res.max_mag is not None:
+            # De-normalize data.
+            norm_u = res.X[:, :7]
+            norm_v = res.X[:, 7:]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag
+            rot = np.arctan2(norm_v, norm_u)
+            all_u = mag * np.cos(rot)
+            all_v = mag * np.sin(rot)
+        else:
+            all_u = res.X[:, :7]
+            all_v = res.X[:, 7:]
+
+        abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
+        abs_max = 20
+
+        # Why no sharex? Because it's difficult to draw on the label ticks on axis
+        # [3, 1], the one with the hidden axis below it.
+        fig, axes = plt.subplots(3, 4, sharey=True)
+
+        plt.setp(axes, xticks=[-10, 0, 20])
+
+        for cluster_index in range(n_clusters):
+            ax = axes.flatten()[cluster_index]
+
+            keep = kmeans_red.labels_ == cluster_index
+
+            u = all_u[keep]
+            v = all_v[keep]
+
+            u_min = u.min(axis=0)
+            u_max = u.max(axis=0)
+            u_mean = u.mean(axis=0)
+            u_std = u.std(axis=0)
+            u_p25, u_p75 = np.percentile(u, (25, 75), axis=0)
+
+            v_min = v.min(axis=0)
+            v_max = v.max(axis=0)
+            v_mean = v.mean(axis=0)
+            v_std = v.std(axis=0)
+            v_p25, v_p75 = np.percentile(v, (25, 75), axis=0)
+
+            # ax.set_title(cluster_index)
+            ax.set_yticks([950, 800, 700, 600, 500])
+
+            ax.plot(u_p25, pressure, 'b:')
+            ax.plot(u_p75, pressure, 'b:')
+            # ax.plot(u_mean - u_std, pressure, 'b--')
+            # ax.plot(u_mean + u_std, pressure, 'b--')
+            ax.plot(u_mean, pressure, 'b-', label='u')
+
+            ax.plot(v_p25, pressure, 'r:')
+            ax.plot(v_p75, pressure, 'r:')
+            # ax.plot(v_mean - v_std, pressure, 'r--')
+            # ax.plot(v_mean + v_std, pressure, 'r--')
+            ax.plot(v_mean, pressure, 'r-', label='v')
+            # plt.legend(loc='best')
+
+            ax.set_xlim((-10, 35))
+            ax.set_ylim((pressure.max(), pressure.min()))
+            ax.set_xticks([-10, 0, 20])
+            # ax.set_xlabel('wind speed (m s$^{-1}$)')
+            # ax.set_ylabel('pressure (hPa)')
+
+            if cluster_index in [0, 1, 2, 3, 4, 5, 6]:
+                plt.setp(ax.get_xticklabels(), visible=False)
+
+            if cluster_index in [9]:
+                # This is a hacky way to position a label!
+                ax.set_xlabel('                    wind speed (m s$^{-1}$)')
+
+            if cluster_index in [4]:
+                ax.set_ylabel('pressure (hPa)')
+            ax.text(0.95, 0.75, 'C{}'.format(cluster_index + 1),
+                   verticalalignment='bottom', horizontalalignment='right',
+                   transform=ax.transAxes,
+                   color='black', fontsize=15)
+
+
+        # plt.tight_layout()
+        axes[-1, -1].axis('off')
+
+        # Profile u/v plots.
+        title_fmt = 'ALL_PROFILES_{}_{}_{}_{}_-{}_nclust-{}'
+        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
         plt.savefig(self.figpath(title) + '.png')
 
         plt.close("all")
@@ -744,6 +838,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                         # self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                         # self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                         self.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                        self.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                         if use_pca:
                             # self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
                             pass
