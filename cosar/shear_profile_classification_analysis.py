@@ -878,13 +878,11 @@ class ShearProfileClassificationAnalyser(Analyser):
             print_filt = '-'.join(filt)
             res = self.res[(use_pca, filt, norm, loc)]
             if loc == 'tropics':
-                # self.plot_scores(use_pca, print_filt, norm, res)
-                pass
+                self.plot_scores(use_pca, print_filt, norm, res)
 
             if use_pca and loc == 'tropics':
                 self.plot_four_pca_profiles(use_pca, print_filt, norm, res)
-                # self.plot_pca_profiles(use_pca, print_filt, norm, res)
-                pass
+                self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
             for n_clusters in CLUSTERS:
                 if n_clusters == DETAILED_CLUSTER:
@@ -904,11 +902,10 @@ class ShearProfileClassificationAnalyser(Analyser):
 
                     if loc == 'tropics':
                         # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
-                        # self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
-                        # self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                        self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
+                        self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                         self.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                         self.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                         if use_pca:
-                            # self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
-                            pass
-                        # self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
+                            self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
+                        self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
