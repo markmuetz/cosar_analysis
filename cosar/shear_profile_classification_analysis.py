@@ -24,13 +24,13 @@ TROPICS_SLICE = slice(48, 97)
 NH_TROPICS_SLICE = slice(73, 97)
 SH_TROPICS_SLICE = slice(48, 72)
 USE_SEEDS = True
-# RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586]
-RANDOM_SEEDS = [391137]
-# CLUSTERS = range(5, 21)
+RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586]
+# RANDOM_SEEDS = [391137]
+CLUSTERS = range(5, 21)
 # CLUSTERS = [5, 10, 15, 20]
-CLUSTERS = [11]
+# CLUSTERS = [11]
 # CLUSTERS = [5, 10, 15, 20]
-DETAILED_CLUSTER = 99
+DETAILED_CLUSTER = 11
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 CAPE_THRESH = 100
@@ -906,8 +906,9 @@ class ShearProfileClassificationAnalyser(Analyser):
                         # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                         self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                         self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
-                        self.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
-                        self.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
+                        if n_clusters == DETAILED_CLUSTER:
+                            self.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                            self.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                         if use_pca:
                             self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
                         self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
