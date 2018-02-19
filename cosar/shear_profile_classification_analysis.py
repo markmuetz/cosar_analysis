@@ -33,6 +33,7 @@ CLUSTERS = [11]
 DETAILED_CLUSTER = 99
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
+CAPE_THRESH = 100
 
 INTERACTIVE = False
 FIGDIR = 'fig'
@@ -155,7 +156,8 @@ def gen_feature_matrix(u, v, w, cape,
             # height level 4 == 850 hPa.
             keep = w.data[t_slice, 4, lat_slice, lon_slice].flatten() > 0
         elif filter == 'cape':
-            keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > 500
+            logger.debug('Filtering on CAPE > {}'.format(CAPE_THRESH))
+            keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > CAPE_THRESH
         elif filter == 'shear':
             pressure = u.coord('pressure').points
 
