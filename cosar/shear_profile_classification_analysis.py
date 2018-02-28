@@ -34,6 +34,7 @@ DETAILED_CLUSTER = 11
 N_PCA_COMPONENTS = None
 EXPL_VAR_MIN = 0.9
 CAPE_THRESH = 100
+SHEAR_PERCENTILE = 75
 
 INTERACTIVE = False
 FIGDIR = 'fig'
@@ -176,7 +177,8 @@ def gen_feature_matrix(u, v, w, cape,
 
             # Take max along pressure-axis.
             max_profile_shear = shear.max(axis=1)
-            max_profile_shear_percentile = np.percentile(max_profile_shear, 25)
+            logger.debug('Filtering on shear percentile > {}'.format(SHEAR_PERCENTILE))
+            max_profile_shear_percentile = np.percentile(max_profile_shear, SHEAR_PERCENTILE)
             keep = max_profile_shear.flatten() > max_profile_shear_percentile
 
         keep &= last_keep
@@ -213,11 +215,12 @@ class ShearProfileClassificationAnalyser(Analyser):
     # filters = [None, 'w', 'cape']
     # filters = ['w', 'cape']
     # normalization = [None, 'mag', 'magrot']
-    pca = [True]
+    # pca = [True]
     # filters = [('cape',), ('cape', 'shear')]
     filters = [('cape', 'shear')]
     normalization = ['magrot']
-    loc = ['tropics', 'NH', 'SH']
+    # loc = ['tropics', 'NH', 'SH']
+    loc = ['tropics']
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -392,8 +395,8 @@ class ShearProfileClassificationAnalyser(Analyser):
         pressure = self.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
-        # clusters_to_disp = list(range(n_clusters))
-        clusters_to_disp = [3, 5, 8]
+        clusters_to_disp = list(range(n_clusters))
+        # clusters_to_disp = [3, 5, 8]
 
         if res.max_mag is not None:
             # De-normalize data.
@@ -410,10 +413,10 @@ class ShearProfileClassificationAnalyser(Analyser):
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
 
-        fig = plt.figure(figsize=(7, 3))
+        fig = plt.figure(figsize=(7, 11))
         fig.subplots_adjust(bottom=0.15)
         gs = gridspec.GridSpec(len(clusters_to_disp), 5, width_ratios=[1, 1, 1, 1, 0.4])
-        cmap = 'autumn'
+        cmap = 'Reds'
         axes1 = []
         axes2 = []
         for ax_index, i in enumerate(clusters_to_disp):
@@ -442,11 +445,8 @@ class ShearProfileClassificationAnalyser(Analyser):
         hist_max = np.max([h[0].max() for h in hists_latlon])
         hist_min = np.min([h[0].min() for h in hists_latlon])
 
-        xy_pos_map = {
-            3: [(-2, -12), (1, -12), (3, -12), (6, -12), (10, -4), (6, 0), (4, 0)],
-            5: [(-6, 8), (-1, 6), (0, 6), (-2, -10), (2, -10), (6, -2), (3, 6)],
-            8: [(-4, -12), (0, -12), (4, -8), (4, 0), (-10, 0), (-2, 2), (10, -4)],
-        }
+        xy_pos_map = { }
+
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = kmeans_red.labels_ == cluster_index
 
@@ -481,7 +481,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                                  textcoords='offset points')
             ax1.set_xlim((-10, 25))
             ax1.set_ylim((-6, 6))
-            if ax_index == 1:
+            if ax_index == len(clusters_to_disp) // 2:
                 ax1.set_ylabel('v (m s$^{-1}$)')
 
             ax2.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
@@ -507,13 +507,17 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             # ax.imshow(hist, origin='upper', extent=extent,
             # transform=ccrs.PlateCarree(), cmap=cmap)
+
+            # Ignores all 0s.
+            # masked_hist = np.ma.masked_array(hist, hist == 0)
+            masked_hist = hist
             # Works better than imshow.
-            masked_hist = np.ma.masked_array(hist, hist == 0)
-            img = ax2.pcolormesh(lon, lat, masked_hist, vmin=1, vmax=hist_max,
-                                 transform=ccrs.PlateCarree(), cmap=cmap)
+            # img = ax2.pcolormesh(lon, lat, masked_hist, vmin=0, vmax=hist_max,
+            img = ax2.pcolormesh(lon, lat, masked_hist, vmax=hist_max,
+                                 transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
             ax2.coastlines()
 
-        cbar = fig.colorbar(img, cax=colorbar_ax, ticks=[1, hist_max],
+        cbar = fig.colorbar(img, cax=colorbar_ax, # ticks=[0, hist_max],
                             cmap=cmap)
         cbar.set_clim(1, hist_max)
 
