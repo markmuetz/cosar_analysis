@@ -25,7 +25,7 @@ setup(
     author_email='m.muetzelfeldt@pgr.reading.ac.uk',
     maintainer='Mark Muetzelfeldt',
     maintainer_email='m.muetzelfeldt@pgr.reading.ac.uk',
-    packages=['cosar', ],
+    packages=['cosar', 'cosar.scripts' ],
     scripts=[ ],
     install_requires=[ ],
     package_data={ },

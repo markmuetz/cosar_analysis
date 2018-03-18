@@ -5,7 +5,7 @@ import itertools
 import math
 
 import matplotlib
-matplotlib.use('agg')
+# matplotlib.use('agg')
 import matplotlib.gridspec as gridspec
 from matplotlib import colors
 import numpy as np
