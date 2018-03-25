@@ -18,7 +18,8 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
 
-from cosar.egu_poster_figs import plot_sample, plot_filtered_sample
+from cosar.egu_poster_figs import (plot_sample, plot_filtered_sample, plot_pca_cluster_results,
+                                   plot_pca_red, plot_gcm_for_schematic)
 
 logger = getLogger('cosar.spca')
 
@@ -928,6 +929,9 @@ class ShearProfileClassificationAnalyser(Analyser):
         logger.info('SH wind angle 850 hPa - 950 hPa: {}'.format(sh_mean_angle))
 
     def display_results(self):
+        if PLOT_EGU_FIGS:
+            plot_gcm_for_schematic()
+
         self.display_veering_backing()
 
         for option in self.options:
@@ -959,6 +963,9 @@ class ShearProfileClassificationAnalyser(Analyser):
                     # self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
 
                     if loc == 'tropics':
+                        if PLOT_EGU_FIGS:
+                            plot_pca_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
+                            plot_pca_red(self.u, use_pca, print_filt, norm, seed, res, disp_res)
                         # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                         # self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                         # self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
