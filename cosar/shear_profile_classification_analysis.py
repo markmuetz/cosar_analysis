@@ -45,7 +45,7 @@ FIGDIR = 'fig'
 COLOURS = random.sample(list(colors.cnames.values()), max(CLUSTERS))
 
 PLOT_EGU_FIGS = True
-NUM_EGU_SAMPLES = 1000
+NUM_EGU_SAMPLES = 10000
 # NUM_EGU_SAMPLES = 10000
 
 class ShearResult(object):

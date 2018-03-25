@@ -7,6 +7,8 @@ import matplotlib.ticker as mticker
 
 logger = getLogger('cosar.spca')
 
+SAVE_LOC = '/home/markmuetz/Dropbox/PhD/Posters/20180409_EGU/figs/'
+
 
 def plot_gcm_for_schematic():
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -21,6 +23,7 @@ def plot_gcm_for_schematic():
     gl.ylocator = mticker.FixedLocator(np.linspace(-90, 90, N * 1.5))
     # gl.xformatter = LongitudeFormatter()
     # gl.yformatter = LatitudeFormatter()
+    plt.savefig(SAVE_LOC + 'gcm_N{}.png'.format(N))
     plt.show()
 
 
@@ -49,6 +52,7 @@ def plot_sample(u, orig_X, sample, xlim=(-20, 20)):
     plt.xlabel('wind speed (m s$^{-1}$)')
     plt.ylabel('pressure (hPa)')
     plt.legend(loc='upper left')
+    plt.savefig(SAVE_LOC + 'all_profiles.png')
     plt.show()
 
 
@@ -91,6 +95,7 @@ def plot_filtered_sample(name, u, orig_X, sample, keep, xlim=(-20, 20)):
         plt.xlabel('wind speed (m s$^{-1}$)')
     plt.ylabel('pressure (hPa)')
     plt.legend(loc='upper left')
+    plt.savefig(SAVE_LOC + '{}_filtered_profiles.png'.format(name))
     plt.show()
 
 def plot_pca_cluster_results(use_pca, filt, norm, seed, res, disp_res):
@@ -105,6 +110,7 @@ def plot_pca_cluster_results(use_pca, filt, norm, seed, res, disp_res):
         # ALL BLACK
         ax.scatter(res.X_pca[:, i + 1], res.X_pca[:, 0], c='k')
 
+    plt.savefig(SAVE_LOC + 'pca_PC1vsPC234.png')
     plt.show()
 
     fig, axes = plt.subplots(1, n_pca_components - 1, sharey=True)
@@ -116,6 +122,7 @@ def plot_pca_cluster_results(use_pca, filt, norm, seed, res, disp_res):
         # Coloured as cluster.
         ax.scatter(res.X_pca[:, i + 1], res.X_pca[:, 0], c=kmeans_red.labels_)
 
+    plt.savefig(SAVE_LOC + 'pca_clustered.png')
     plt.show()
 
 def plot_pca_red(u, use_pca, filt, norm, seed, res, disp_res):
@@ -139,4 +146,5 @@ def plot_pca_red(u, use_pca, filt, norm, seed, res, disp_res):
         ax.set_ylim((pressure[-1], pressure[0]))
         ax.set_xlim((-0.3, 0.5))
 
+    plt.savefig(SAVE_LOC + 'pca_reduced.png')
     plt.show()
