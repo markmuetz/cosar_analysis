@@ -188,8 +188,8 @@ class ShearProfileClassificationAnalyser(Analyser):
             X_full_lon, orig_X)
 
         if PLOT_EGU_FIGS:
-            plot_filtered_sample('mag', u, X_mag, self.X_sample, self.keep, xlim=(-1, 1))
-            plot_filtered_sample('magrot', u, X_magrot, self.X_sample, self.keep, xlim=(-1, 1))
+            plot_filtered_sample('norm_mag', u, X_mag, self.X_sample, self.keep, xlim=(-1, 1))
+            plot_filtered_sample('norm_magrot', u, X_magrot, self.X_sample, self.keep, xlim=(-1, 1))
 
         logger.info('X_filtered shape: {}'.format(X_filtered.shape))
 

@@ -31,17 +31,27 @@ def plot_sample(u, orig_X, sample, xlim=(-20, 20)):
 
 def plot_filtered_sample(name, u, orig_X, sample, keep, xlim=(-20, 20)):
     logger.debug('plotting {} filtered sample'.format(name))
-    logger.debug('{} samples'.format(keep[sample].sum()))
+    if keep == 'all':
+        logger.debug('{} samples'.format(sample.shape[0]))
+    else:
+        logger.debug('{} samples'.format(keep[sample].sum()))
+
     pressure = u.coord('pressure').points
     i = 0
+    if name[:4] == 'norm':
+        u_label = 'u\''
+        v_label = 'v\''
+    else:
+        u_label = 'u'
+        v_label = 'v'
     for X_index in sample:
-        if not keep[X_index]:
+        if keep != 'all' and not keep[X_index]:
             continue
         u = orig_X[X_index, :7]
         v = orig_X[X_index, 7:]
         if i == 0:
-            plt.plot(u, pressure, 'b-', label='u')
-            plt.plot(v, pressure, 'r-', label='v')
+            plt.plot(u, pressure, 'b-', label=u_label)
+            plt.plot(v, pressure, 'r-', label=v_label)
         elif i % 100 == 0:
             print(i)
 
@@ -51,8 +61,11 @@ def plot_filtered_sample(name, u, orig_X, sample, keep, xlim=(-20, 20)):
         i += 1
 
     plt.xlim(xlim)
-    plt.ylim((1000, 500))
-    plt.xlabel('wind speed (m s$^{-1}$)')
+    plt.ylim((950, 500))
+    if name[:4] == 'norm':
+        plt.xlabel('normalized wind speed')
+    else:
+        plt.xlabel('wind speed (m s$^{-1}$)')
     plt.ylabel('pressure (hPa)')
     plt.legend(loc='upper left')
     plt.show()
