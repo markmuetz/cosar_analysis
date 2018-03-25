@@ -18,6 +18,8 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
 
+from cosar.egu_poster_figs import plot_sample, plot_filtered_sample
+
 logger = getLogger('cosar.spca')
 
 TROPICS_SLICE = slice(48, 97)
@@ -41,6 +43,9 @@ FIGDIR = 'fig'
 
 COLOURS = random.sample(list(colors.cnames.values()), max(CLUSTERS))
 
+PLOT_EGU_FIGS = True
+NUM_EGU_SAMPLES = 1000
+# NUM_EGU_SAMPLES = 10000
 
 class ShearResult(object):
     def __init__(self):
@@ -58,7 +63,7 @@ class ShearProfileClassificationAnalyser(Analyser):
     analysis_name = 'shear_profile_classification_analysis'
     single_file = True
 
-    pca = [True, False]
+    pca = [True]
     # filters = [None, 'w', 'cape']
     # filters = ['w', 'cape']
     # normalization = [None, 'mag', 'magrot']
@@ -68,7 +73,6 @@ class ShearProfileClassificationAnalyser(Analyser):
     normalization = ['magrot']
     # loc = ['tropics', 'NH', 'SH']
     loc = ['tropics']
-    egu_poster_figs = True
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -145,6 +149,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         Filters, normalization are supplied by filter_on list and norm string.
         Subsets of data can be specified by supplying slices."""
 
+        logger.debug('slicing u, v')
         # Explanation: slice arrays on t, lat, lon
         sliced_u = u[t_slice, :, lat_slice, lon_slice]
         sliced_v = v[t_slice, :, lat_slice, lon_slice]
@@ -154,6 +159,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         logger.info('Sliced lat: {} to {}'.format(lat.min(), lat.max()))
         logger.info('Sliced lon: {} to {}'.format(lon.min(), lon.max()))
 
+        logger.debug('re-order axes on u, v')
         # re-order axes to put height last,
         # reshape to get matrix where each row is a height profile.
         orig_Xu = sliced_u.data.transpose(0, 2, 3, 1).reshape(-1, 7)
@@ -162,27 +168,79 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         # Add the two matrices together to get feature set.
         orig_X = np.concatenate((orig_Xu, orig_Xv), axis=1)
+        if PLOT_EGU_FIGS:
+            # generate random sample as indices to X:
+            self.X_sample = np.random.choice(range(orig_X.shape[0]), NUM_EGU_SAMPLES, replace=False)
+            plot_sample(u, orig_X, self.X_sample)
+        X_full_lat, X_full_lon = self._extract_lat_lon(lat_slice, lon_slice, sliced_u, u)
 
         if norm is not None:
-            X, max_mag = self._normalize_feature_matrix(norm, sliced_u, sliced_v)
+            X_mag, X_magrot, max_mag = self._normalize_feature_matrix(norm, sliced_u, sliced_v)
+            if norm == 'mag':
+                X = X_mag
+            elif norm == 'magrot':
+                X = X_magrot
 
         logger.info('X shape: {}'.format(sliced_u.shape))
-        X_full_lat, X_full_lon = self._extract_lat_lon(lat_slice, lon_slice, sliced_u, u)
 
         X_filtered, X_filtered_lat, X_filtered_lon, orig_X_filtered = self._filter_feature_matrix(
             filter_on, lon_slice, lat_slice, t_slice, u, w, cape, sliced_u, sliced_v, X, X_full_lat,
             X_full_lon, orig_X)
 
+        if PLOT_EGU_FIGS:
+            plot_filtered_sample('mag', u, X_mag, self.X_sample, self.keep, xlim=(-1, 1))
+            plot_filtered_sample('magrot', u, X_magrot, self.X_sample, self.keep, xlim=(-1, 1))
+
         logger.info('X_filtered shape: {}'.format(X_filtered.shape))
 
         return orig_X_filtered, X_filtered, (X_filtered_lat, X_filtered_lon), max_mag
 
+    def _normalize_feature_matrix(self, norm, sliced_u, sliced_v):
+        """Perfrom normalization based on norm. Only options are norm=mag,magrot
+
+        Note: normalization is carried out using the *complete* dataset, not on the filtered
+        values."""
+        assert norm in ['mag', 'magrot']
+        logger.debug('normalizing data')
+        mag = np.sqrt(sliced_u.data ** 2 + sliced_v.data ** 2)
+        rot = np.arctan2(sliced_v.data, sliced_u.data)
+        # Normalize the profiles by the maximum magnitude at each level.
+        max_mag = mag.max(axis=(0, 2, 3))
+        logger.debug('max_mag = {}'.format(max_mag))
+        norm_mag = mag / max_mag[None, :, None, None]
+        u_norm_mag = norm_mag * np.cos(rot)
+        v_norm_mag = norm_mag * np.sin(rot)
+        # Normalize the profiles by the rotation at level 4 == 850 hPa.
+        rot_at_level = rot[:, 4, :, :]
+        norm_rot = rot - rot_at_level[:, None, :, :]
+        logger.debug('# profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4, :, :] < 1).sum()))
+        logger.debug('% profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4, :, :] < 1).sum() /
+                                                                   mag[:, 4, :, :].size * 100))
+        u_norm_mag_rot = norm_mag * np.cos(norm_rot)
+        v_norm_mag_rot = norm_mag * np.sin(norm_rot)
+
+        Xu_mag = u_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
+        Xv_mag = v_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
+        # Add the two matrices together to get feature set.
+        X_mag = np.concatenate((Xu_mag, Xv_mag), axis=1)
+
+        Xu_magrot = u_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
+        Xv_magrot = v_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
+        # Add the two matrices together to get feature set.
+        X_magrot = np.concatenate((Xu_magrot, Xv_magrot), axis=1)
+
+        return X_mag, X_magrot, max_mag
+
     def _filter_feature_matrix(self, filter_on, lon_slice, lat_slice, t_slice, u, w, cape, sliced_u,
                                sliced_v, X, X_full_lat, X_full_lon, orig_X):
         """Apply successive filters in filter_on to X. Filters are anded together."""
+        logger.debug('filtering')
         last_keep = np.ones(w.data[t_slice, 0, lat_slice, lon_slice].size, dtype=bool)
         keep = last_keep
+        all_filters = ''
         for filter in filter_on:
+            all_filters += '_' + filter
+
             logger.debug('using filter {}'.format(filter))
 
             if filter == 'w':
@@ -216,43 +274,16 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             keep &= last_keep
             last_keep = keep
+
+            if PLOT_EGU_FIGS:
+                plot_filtered_sample(all_filters, u, orig_X, self.X_sample, keep)
+                self.keep = keep
+
         orig_X_filtered = orig_X[keep, :]
         X_filtered = X[keep, :]
         X_filtered_lat = X_full_lat[keep]
         X_filtered_lon = X_full_lon[keep]
         return X_filtered, X_filtered_lat, X_filtered_lon, orig_X_filtered
-
-    def _normalize_feature_matrix(self, norm, sliced_u, sliced_v):
-        """Perfrom normalization based on norm. Only options are norm=mag,magrot"""
-        assert norm in ['mag', 'magrot']
-        logger.debug('normalizing data')
-        mag = np.sqrt(sliced_u.data ** 2 + sliced_v.data ** 2)
-        rot = np.arctan2(sliced_v.data, sliced_u.data)
-        # Normalize the profiles by the maximum magnitude at each level.
-        max_mag = mag.max(axis=(0, 2, 3))
-        logger.debug('max_mag = {}'.format(max_mag))
-        norm_mag = mag / max_mag[None, :, None, None]
-        u_norm_mag = norm_mag * np.cos(rot)
-        v_norm_mag = norm_mag * np.sin(rot)
-        # Normalize the profiles by the rotation at level 4 == 850 hPa.
-        rot_at_level = rot[:, 4, :, :]
-        norm_rot = rot - rot_at_level[:, None, :, :]
-        logger.debug('# profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4, :, :] < 1).sum()))
-        logger.debug('% profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4, :, :] < 1).sum() /
-                                                                   mag[:, 4, :, :].size * 100))
-        u_norm_mag_rot = norm_mag * np.cos(norm_rot)
-        v_norm_mag_rot = norm_mag * np.sin(norm_rot)
-        if norm == 'mag':
-            Xu = u_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
-            Xv = v_norm_mag.transpose(0, 2, 3, 1).reshape(-1, 7)
-            # Add the two matrices together to get feature set.
-            X = np.concatenate((Xu, Xv), axis=1)
-        elif norm == 'magrot':
-            Xu = u_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
-            Xv = v_norm_mag_rot.transpose(0, 2, 3, 1).reshape(-1, 7)
-            # Add the two matrices together to get feature set.
-            X = np.concatenate((Xu, Xv), axis=1)
-        return X, max_mag
 
     def _extract_lat_lon(self, lat_slice, lon_slice, sliced_u, u):
         """Creates X_full_lat and X_full_lon, which can be filtered as X is"""
@@ -260,6 +291,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         # is to create a lat/lon array with the same shape as the (time, lat, lon) part of the
         # full cube, then reshape this so that it is a 1D array with the same length as the 1st
         # dim of Xu (e.g. X_full_lat_lon). I can then filter it and use it to map back to lat/lon.
+        logger.debug('extracting lat lon')
         lat = u[0, 0, lat_slice, lon_slice].coord('latitude').points
         lon = u[0, 0, lat_slice, lon_slice].coord('longitude').points
         latlon = np.meshgrid(lat, lon, indexing='ij')
@@ -908,7 +940,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
             if use_pca and loc == 'tropics':
                 self.plot_four_pca_profiles(use_pca, print_filt, norm, res)
-                self.plot_pca_profiles(use_pca, print_filt, norm, res)
+                # self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
             for n_clusters in CLUSTERS:
                 if n_clusters == DETAILED_CLUSTER:
@@ -934,5 +966,6 @@ class ShearProfileClassificationAnalyser(Analyser):
                             self.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                             self.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                         if use_pca:
-                            self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
+                            # self.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
+                            pass
                         self.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)

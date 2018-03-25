@@ -119,6 +119,7 @@ def plot_all_raw_profiles(u, v):
 
 
 def plot_filtered_profiles(u, v, cape):
+    # N.B. code copied from shear_profile_classification_analysis - _filter_feature_matrix.
     all_locs = itertools.product(range(48, 97), range(u.shape[3]))
     cape_filtered_locs = []
     for i, loc in enumerate(all_locs):
@@ -182,9 +183,9 @@ def main():
     u = get_cube(pc, 30, 201)
     v = get_cube(pc, 30, 202)
     cape = get_cube(pc, 5, 233)
-    # plot_example_profiles_hodographs()
-    # plot_gcm_for_schematic()
-    # plot_all_raw_profiles(u, v)
+    plot_example_profiles_hodographs()
+    plot_gcm_for_schematic()
+    plot_all_raw_profiles(u, v)
     plot_filtered_profiles(u, v, cape)
 
 
