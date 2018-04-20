@@ -63,6 +63,8 @@ def plot_filtered_sample(name, u, orig_X, sample, keep, xlim=(-20, 20)):
     else:
         logger.debug('{} samples'.format(keep[sample].sum()))
 
+    plt.figure(0, (5, 5))
+    plt.tight_layout()
     pressure = u.coord('pressure').points
     i = 0
     if name[:4] == 'norm':
@@ -101,28 +103,26 @@ def plot_filtered_sample(name, u, orig_X, sample, keep, xlim=(-20, 20)):
 def plot_pca_cluster_results(use_pca, filt, norm, seed, res, disp_res):
     n_pca_components, n_clusters, kmeans_red, *_ = disp_res
 
-    fig, axes = plt.subplots(1, n_pca_components - 1, sharey=True)
-    for i in range(n_pca_components - 1):
-        ax = axes[i]
+    fig, ax = plt.subplots(1, 1, sharey=True, figsize=(5, 5))
+    # Plot PC1 vs PC2
+    # PC1 on x-axis.
+    # ALL BLACK
+    ax.scatter(res.X_pca[:, 0], res.X_pca[:, 1], c='k')
+    ax.set_xlabel('PC1')
+    ax.set_ylabel('PC2')
 
-        # Plot PC1 vs PC2, PC3...
-        # PC1 on y-axis.
-        # ALL BLACK
-        ax.scatter(res.X_pca[:, i + 1], res.X_pca[:, 0], c='k')
-
-    plt.savefig(SAVE_LOC + 'pca_PC1vsPC234.png')
+    plt.savefig(SAVE_LOC + 'pca_PC1vsPC2.png')
     plt.show()
 
-    fig, axes = plt.subplots(1, n_pca_components - 1, sharey=True)
-    for i in range(n_pca_components - 1):
-        ax = axes[i]
+    fig, ax = plt.subplots(1, 1, sharey=True, figsize=(5, 5))
+    # Plot PC1 vs PC2
+    # PC1 on x-axis.
+    # Coloured by cluster.
+    ax.scatter(res.X_pca[:, 0], res.X_pca[:, 1], c=kmeans_red.labels_)
+    ax.set_xlabel('PC1')
+    ax.set_ylabel('PC2')
 
-        # Plot PC1 vs PC2, PC3...
-        # PC1 on y-axis.
-        # Coloured as cluster.
-        ax.scatter(res.X_pca[:, i + 1], res.X_pca[:, 0], c=kmeans_red.labels_)
-
-    plt.savefig(SAVE_LOC + 'pca_clustered.png')
+    plt.savefig(SAVE_LOC + 'pca_PC1vsPC2_clustered.png')
     plt.show()
 
 def plot_pca_red(u, use_pca, filt, norm, seed, res, disp_res):

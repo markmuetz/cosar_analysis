@@ -18,7 +18,7 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
 
-from cosar.egu_poster_figs import (plot_sample, plot_filtered_sample, plot_pca_cluster_results,
+from cosar.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
                                    plot_pca_red, plot_gcm_for_schematic)
 
 logger = getLogger('cosar.spca')
@@ -46,7 +46,6 @@ COLOURS = random.sample(list(colors.cnames.values()), max(CLUSTERS))
 
 PLOT_EGU_FIGS = True
 NUM_EGU_SAMPLES = 10000
-# NUM_EGU_SAMPLES = 10000
 
 class ShearResult(object):
     def __init__(self):
@@ -172,7 +171,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         if PLOT_EGU_FIGS:
             # generate random sample as indices to X:
             self.X_sample = np.random.choice(range(orig_X.shape[0]), NUM_EGU_SAMPLES, replace=False)
-            plot_sample(u, orig_X, self.X_sample)
+            plot_filtered_sample('full', u, orig_X, self.X_sample, 'all')
         X_full_lat, X_full_lon = self._extract_lat_lon(lat_slice, lon_slice, sliced_u, u)
 
         if norm is not None:
