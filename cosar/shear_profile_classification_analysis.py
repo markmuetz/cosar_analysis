@@ -1,8 +1,7 @@
-import os
 from logging import getLogger
 import random
 import itertools
-import math
+import pickle
 
 import matplotlib
 # matplotlib.use('agg')
@@ -136,7 +135,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                     cluster_cluster_dist = np.ma.masked_array(cluster_cluster_dist, np.tril(ones))
                     res.disp_res[(n_clusters, seed)] = (n_pca_components, n_clusters,
                                                         kmeans_red, cluster_cluster_dist)
-
+        pickle.dump(res, open('res.pkl', 'wb'))
 
     def _gen_feature_matrix(self, u, v, w, cape,
                             filter_on=None,
