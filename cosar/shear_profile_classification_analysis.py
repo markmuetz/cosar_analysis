@@ -1,3 +1,4 @@
+import os
 from logging import getLogger
 import random
 import itertools
@@ -16,35 +17,38 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
+from omnium.analyser_setting import AnalyserSetting
 
 from cosar.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
                                    plot_pca_red, plot_gcm_for_schematic)
 
 logger = getLogger('cosar.spca')
 
-TROPICS_SLICE = slice(48, 97)
-NH_TROPICS_SLICE = slice(73, 97)
-SH_TROPICS_SLICE = slice(48, 72)
-USE_SEEDS = True
-# RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586]
-RANDOM_SEEDS = [391137]
-# CLUSTERS = range(5, 21)
-# CLUSTERS = [5, 10, 15, 20]
-CLUSTERS = [11]
-# CLUSTERS = [5, 10, 15, 20]
-DETAILED_CLUSTER = 11
-N_PCA_COMPONENTS = None
-EXPL_VAR_MIN = 0.9
-CAPE_THRESH = 100
-SHEAR_PERCENTILE = 75
+fs = AnalyserSetting(dict(
+    TROPICS_SLICE = slice(48, 97),
+    NH_TROPICS_SLICE = slice(73, 97),
+    SH_TROPICS_SLICE = slice(48, 72),
+    USE_SEEDS = True,
+    # RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586]
+    RANDOM_SEEDS = [391137],
+    # CLUSTERS = range(5, 21)
+    # CLUSTERS = [5, 10, 15, 20]
+    CLUSTERS = [11],
+    # CLUSTERS = [5, 10, 15, 20]
+    DETAILED_CLUSTER = 11,
+    N_PCA_COMPONENTS = None,
+    EXPL_VAR_MIN = 0.9,
+    CAPE_THRESH = 100,
+    SHEAR_PERCENTILE = 75,
 
-INTERACTIVE = False
-FIGDIR = 'fig'
+    INTERACTIVE = False,
+    FIGDIR = 'fig',
 
-COLOURS = random.sample(list(colors.cnames.values()), max(CLUSTERS))
+    PLOT_EGU_FIGS = False,
+    NUM_EGU_SAMPLES = 10000,
+))
 
-PLOT_EGU_FIGS = True
-NUM_EGU_SAMPLES = 10000
+COLOURS = random.sample(list(colors.cnames.values()), max(fs.CLUSTERS))
 
 class ShearResult(object):
     def __init__(self):
@@ -73,7 +77,18 @@ class ShearProfileClassificationAnalyser(Analyser):
     # loc = ['tropics', 'NH', 'SH']
     loc = ['tropics']
 
+    settings_hash = fs.get_hash()
+
+    def save_path(self, name):
+        base_dirname = os.path.dirname(self.figpath(''))
+        dirname = os.path.join(base_dirname, self.settings_hash)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        return os.path.join(dirname, name)
+
     def run_analysis(self):
+        logger.info('Using settings: {}'.format(self.settings_hash))
+
         self.u = get_cube(self.cubes, 30, 201)
         self.v = get_cube(self.cubes, 30, 202)
         self.w = get_cube(self.cubes, 30, 203)
@@ -92,11 +107,11 @@ class ShearProfileClassificationAnalyser(Analyser):
             self.res[option] = res
 
             if loc == 'tropics':
-                kwargs = {'lat_slice': TROPICS_SLICE}
+                kwargs = {'lat_slice': fs.TROPICS_SLICE}
             elif loc == 'NH':
-                kwargs = {'lat_slice': NH_TROPICS_SLICE}
+                kwargs = {'lat_slice': fs.NH_TROPICS_SLICE}
             elif loc == 'SH':
-                kwargs = {'lat_slice': SH_TROPICS_SLICE}
+                kwargs = {'lat_slice': fs.SH_TROPICS_SLICE}
 
             # Generate feature matrix - common for all analysis.
             (res.orig_X, res.X,
@@ -111,16 +126,16 @@ class ShearProfileClassificationAnalyser(Analyser):
                 res.X_pca = res.X
                 n_pca_components = res.X.shape[1]
 
-            for n_clusters in CLUSTERS:
-                if n_clusters == DETAILED_CLUSTER:
+            for n_clusters in fs.CLUSTERS:
+                if n_clusters == fs.DETAILED_CLUSTER:
                     if loc == 'tropics':
-                        seeds = RANDOM_SEEDS
+                        seeds = fs.RANDOM_SEEDS
                     else:
-                        seeds = RANDOM_SEEDS[:1]
+                        seeds = fs.RANDOM_SEEDS[:1]
                 else:
                     if loc != 'tropics':
                         continue
-                    seeds = RANDOM_SEEDS[:1]
+                    seeds = fs.RANDOM_SEEDS[:1]
                 logger.info('Running for n_clusters = {}'.format(n_clusters))
 
                 for seed in seeds:
@@ -135,7 +150,8 @@ class ShearProfileClassificationAnalyser(Analyser):
                     cluster_cluster_dist = np.ma.masked_array(cluster_cluster_dist, np.tril(ones))
                     res.disp_res[(n_clusters, seed)] = (n_pca_components, n_clusters,
                                                         kmeans_red, cluster_cluster_dist)
-        pickle.dump(res, open('res.pkl', 'wb'))
+        pickle.dump(res, open(self.save_path('res.pkl'), 'wb'))
+        fs.save(self.save_path('settings.json'))
 
     def _gen_feature_matrix(self, u, v, w, cape,
                             filter_on=None,
@@ -167,9 +183,9 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         # Add the two matrices together to get feature set.
         orig_X = np.concatenate((orig_Xu, orig_Xv), axis=1)
-        if PLOT_EGU_FIGS:
+        if fs.PLOT_EGU_FIGS:
             # generate random sample as indices to X:
-            self.X_sample = np.random.choice(range(orig_X.shape[0]), NUM_EGU_SAMPLES, replace=False)
+            self.X_sample = np.random.choice(range(orig_X.shape[0]), fs.NUM_EGU_SAMPLES, replace=False)
             plot_filtered_sample('full', u, orig_X, self.X_sample, 'all')
         X_full_lat, X_full_lon = self._extract_lat_lon(lat_slice, lon_slice, sliced_u, u)
 
@@ -186,7 +202,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             filter_on, lon_slice, lat_slice, t_slice, u, w, cape, sliced_u, sliced_v, X, X_full_lat,
             X_full_lon, orig_X)
 
-        if PLOT_EGU_FIGS:
+        if fs.PLOT_EGU_FIGS:
             plot_filtered_sample('norm_mag', u, X_mag, self.X_sample, self.keep, xlim=(-1, 1))
             plot_filtered_sample('norm_magrot', u, X_magrot, self.X_sample, self.keep, xlim=(-1, 1))
 
@@ -247,8 +263,8 @@ class ShearProfileClassificationAnalyser(Analyser):
                 # height level 4 == 850 hPa.
                 keep = w.data[t_slice, 4, lat_slice, lon_slice].flatten() > 0
             elif filter == 'cape':
-                logger.debug('Filtering on CAPE > {}'.format(CAPE_THRESH))
-                keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > CAPE_THRESH
+                logger.debug('Filtering on CAPE > {}'.format(fs.CAPE_THRESH))
+                keep = cape.data[t_slice, lat_slice, lon_slice].flatten() > fs.CAPE_THRESH
             elif filter == 'shear':
                 pressure = u.coord('pressure').points
 
@@ -267,14 +283,14 @@ class ShearProfileClassificationAnalyser(Analyser):
 
                 # Take max along pressure-axis.
                 max_profile_shear = shear.max(axis=1)
-                logger.debug('Filtering on shear percentile > {}'.format(SHEAR_PERCENTILE))
-                max_profile_shear_percentile = np.percentile(max_profile_shear, SHEAR_PERCENTILE)
+                logger.debug('Filtering on shear percentile > {}'.format(fs.SHEAR_PERCENTILE))
+                max_profile_shear_percentile = np.percentile(max_profile_shear, fs.SHEAR_PERCENTILE)
                 keep = max_profile_shear.flatten() > max_profile_shear_percentile
 
             keep &= last_keep
             last_keep = keep
 
-            if PLOT_EGU_FIGS:
+            if fs.PLOT_EGU_FIGS:
                 plot_filtered_sample(all_filters, u, orig_X, self.X_sample, keep)
                 self.keep = keep
 
@@ -309,7 +325,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         return X_full_lat, X_full_lon
 
-    def _calc_pca(self, X, n_pca_components=None, expl_var_min=EXPL_VAR_MIN):
+    def _calc_pca(self, X, n_pca_components=None, expl_var_min=fs.EXPL_VAR_MIN):
         """Calcs PCs, either with n_pca_components or by explaining over expl_var_min of the var."""
         pca = PCA(n_components=X.shape[1])
         pca.fit(X)
@@ -344,7 +360,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
                 plt.scatter(res.X_pca[:, i], res.X_pca[:, j], c=kmeans_red.labels_)
 
-                plt.savefig(self.figpath(title) + '.png')
+                plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
 
@@ -416,7 +432,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.xlabel('wind speed (m s$^{-1}$)')
             plt.ylabel('pressure (hPa)')
 
-            plt.savefig(self.figpath(title) + '.png')
+            plt.savefig(self.save_path(title) + '.png')
 
             # Profile hodographs.
             title_fmt = 'HODO_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
@@ -438,7 +454,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.xlabel('u (m s$^{-1}$)')
             plt.ylabel('v (m s$^{-1}$)')
 
-            plt.savefig(self.figpath(title) + '.png')
+            plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
 
@@ -573,7 +589,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         cbar.set_clim(1, hist_max)
 
         # plt.tight_layout()
-        plt.savefig(self.figpath(title) + '.png')
+        plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
 
@@ -665,7 +681,7 @@ class ShearProfileClassificationAnalyser(Analyser):
         # Profile u/v plots.
         title_fmt = 'ALL_PROFILES_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
-        plt.savefig(self.figpath(title) + '.png')
+        plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
 
@@ -700,7 +716,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             if i == 0:
                 ax.set_ylabel('v (m s$^{-1}$)')
 
-        plt.savefig(self.figpath(title) + '.png')
+        plt.savefig(self.save_path(title) + '.png')
         plt.close("all")
 
     def plot_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
@@ -731,7 +747,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             if i == 0:
                 ax.set_ylabel('v (m s$^{-1}$)')
 
-        plt.savefig(self.figpath(title) + '.png')
+        plt.savefig(self.save_path(title) + '.png')
         plt.close("all")
 
     def plot_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
@@ -772,7 +788,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             ax.coastlines()
 
             # N.B. set_xlabel will not work for cartopy axes.
-            plt.savefig(self.figpath(title) + '.png')
+            plt.savefig(self.save_path(title) + '.png')
 
             if False:
                 # Produces a very similar image.
@@ -792,7 +808,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                 ax.set_xlabel('longitude')
                 ax.set_ylabel('latitude')
 
-                plt.savefig(self.figpath(title) + '.png')
+                plt.savefig(self.save_path(title) + '.png')
         plt.close("all")
 
     def plot_pca_red(self, use_pca, filt, norm, seed, res, disp_res):
@@ -813,7 +829,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.plot(red_profile[7:], pressure, 'r--')
 
             plt.ylim((pressure[-1], pressure[0]))
-            plt.savefig(self.figpath(title) + '.png')
+            plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
 
@@ -837,7 +853,7 @@ class ShearProfileClassificationAnalyser(Analyser):
             plt.xlim((-1, 1))
             plt.ylim((pressure[-1], pressure[0]))
             plt.legend(loc='best')
-            plt.savefig(self.figpath(title) + '.png')
+            plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
 
@@ -870,7 +886,7 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         title_fmt = 'FOUR_PCA_PROFILES_{}_{}'
         title = title_fmt.format(use_pca, filt)
-        plt.savefig(self.figpath(title) + '.png')
+        plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
 
@@ -880,8 +896,8 @@ class ShearProfileClassificationAnalyser(Analyser):
         plt.figure(title)
         plt.clf()
         scores = []
-        for n_clusters in CLUSTERS:
-            disp_res = res.disp_res[(n_clusters, RANDOM_SEEDS[0])]
+        for n_clusters in fs.CLUSTERS:
+            disp_res = res.disp_res[(n_clusters, fs.RANDOM_SEEDS[0])]
             n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
             # score(...) gives the -(inertia):
@@ -889,18 +905,18 @@ class ShearProfileClassificationAnalyser(Analyser):
             # This is the "within-cluster sum of squares".
             scores.append(kmeans_red.score(res.X_pca[:, :n_pca_components]))
 
-        plt.plot(CLUSTERS, scores)
+        plt.plot(fs.CLUSTERS, scores)
         plt.xlabel('# clusters')
         plt.ylabel('score')
 
-        plt.savefig(self.figpath(title) + '.png')
+        plt.savefig(self.save_path(title) + '.png')
         plt.close("all")
 
     def display_cluster_cluster_dist(self, use_pca, filt, norm, seed, res, disp_res):
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         title_fmt = 'CLUST_CLUST_DIST_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
-        np_filename = self.figpath(title) + '.np'
+        np_filename = self.save_path(title) + '.np'
 
         ones = np.ones((n_clusters, n_clusters))
         max_dist_index = np.unravel_index(np.argmax(cc_dist), ones.shape)
@@ -921,13 +937,13 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         r950 = np.arctan2(v950.data, u950.data)
         r850 = np.arctan2(v850.data, u850.data)
-        nh_mean_angle = (r850[:, NH_TROPICS_SLICE, :] - r950[:, NH_TROPICS_SLICE, :]).mean()
-        sh_mean_angle = (r850[:, SH_TROPICS_SLICE, :] - r950[:, SH_TROPICS_SLICE, :]).mean()
+        nh_mean_angle = (r850[:, fs.NH_TROPICS_SLICE, :] - r950[:, fs.NH_TROPICS_SLICE, :]).mean()
+        sh_mean_angle = (r850[:, fs.SH_TROPICS_SLICE, :] - r950[:, fs.SH_TROPICS_SLICE, :]).mean()
         logger.info('NH wind angle 850 hPa - 950 hPa: {}'.format(nh_mean_angle))
         logger.info('SH wind angle 850 hPa - 950 hPa: {}'.format(sh_mean_angle))
 
     def display_results(self):
-        if PLOT_EGU_FIGS:
+        if fs.PLOT_EGU_FIGS:
             plot_gcm_for_schematic()
 
         self.display_veering_backing()
@@ -944,16 +960,16 @@ class ShearProfileClassificationAnalyser(Analyser):
                 self.plot_four_pca_profiles(use_pca, print_filt, norm, res)
                 # self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
-            for n_clusters in CLUSTERS:
-                if n_clusters == DETAILED_CLUSTER:
+            for n_clusters in fs.CLUSTERS:
+                if n_clusters == fs.DETAILED_CLUSTER:
                     if loc == 'tropics':
-                        seeds = RANDOM_SEEDS
+                        seeds = fs.RANDOM_SEEDS
                     else:
-                        seeds = RANDOM_SEEDS[:1]
+                        seeds = fs.RANDOM_SEEDS[:1]
                 else:
                     if loc != 'tropics':
                         continue
-                    seeds = RANDOM_SEEDS[:1]
+                    seeds = fs.RANDOM_SEEDS[:1]
 
                 for seed in seeds:
                     disp_res = res.disp_res[(n_clusters, seed)]
@@ -961,13 +977,13 @@ class ShearProfileClassificationAnalyser(Analyser):
                     # self.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
 
                     if loc == 'tropics':
-                        if PLOT_EGU_FIGS:
+                        if fs.PLOT_EGU_FIGS:
                             plot_pca_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                             plot_pca_red(self.u, use_pca, print_filt, norm, seed, res, disp_res)
                         # self.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                         # self.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                         # self.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
-                        if n_clusters == DETAILED_CLUSTER:
+                        if n_clusters == fs.DETAILED_CLUSTER:
                             self.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                             self.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                         if use_pca:
