@@ -1,4 +1,7 @@
 from logging import getLogger
+
+import matplotlib
+matplotlib.use('agg')
 import numpy as np
 import pylab as plt
 import cartopy.crs as ccrs

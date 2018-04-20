@@ -2,7 +2,7 @@ from logging import getLogger
 
 import numpy as np
 import matplotlib
-# matplotlib.use('agg')
+matplotlib.use('agg')
 import matplotlib.gridspec as gridspec
 from matplotlib import colors
 import pylab as plt
@@ -10,9 +10,6 @@ import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
 logger = getLogger('cosar.spca')
-
-
-
 
 
 class ShearPlotter:
