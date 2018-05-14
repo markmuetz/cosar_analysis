@@ -373,7 +373,6 @@ class ShearProfileClassificationAnalyser(Analyser):
 
         return X_pca, pca, n_pca_components
 
-
     def display_results(self):
         if fs.PLOT_EGU_FIGS:
             plot_gcm_for_schematic()
