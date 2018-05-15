@@ -48,7 +48,7 @@ class ShearProfileFilter(Analyser):
         self.df['lon'] = lon
 
     def save(self, state=None, suite=None):
-        self.df.to_hdf('filtered_profile.hdf', 'filtered_profile')
+        self.df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
 
     def _filter(self, u, v, w, cape,
                 filter_on=None,

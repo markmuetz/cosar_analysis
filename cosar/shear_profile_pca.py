@@ -34,7 +34,7 @@ class ShearProfilePca(Analyser):
         self.pca_df['lon'] = self.df['lon']
 
     def save(self, state=None, suite=None):
-        self.pca_df.to_hdf('pca_profile.hdf', 'filtered_profile')
+        self.pca_df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
 
     def _calc_pca(self, X, n_pca_components=None, expl_var_min=fs.EXPL_VAR_MIN):
         """Calcs PCs, either with n_pca_components or by explaining over expl_var_min of the var."""

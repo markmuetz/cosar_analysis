@@ -39,7 +39,7 @@ class ShearProfileNormalize(Analyser):
         self.norm_df['lon'] = self.df['lon']
 
     def save(self, state=None, suite=None):
-        self.norm_df.to_hdf('normalized_profile.hdf', 'filtered_profile')
+        self.norm_df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
 
     def _normalize_feature_matrix2(self, X_filtered):
         """Perfrom normalization based on norm. Only options are norm=mag,magrot
