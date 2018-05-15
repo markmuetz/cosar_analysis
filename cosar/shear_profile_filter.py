@@ -11,18 +11,6 @@ from omnium.utils import get_cube
 logger = getLogger('cosar.spf')
 
 
-class ShearResult(object):
-    def __init__(self):
-        self.orig_X = None
-        self.X = None
-        self.X_latlon = None
-        self.max_mag = None
-        self.X_pca = None
-        self.pca = None
-        self.n_pca_components = None
-        self.disp_res = {}
-
-
 class ShearProfileFilter(Analyser):
     analysis_name = 'shear_profile_filter'
     multi_file = True
@@ -34,8 +22,6 @@ class ShearProfileFilter(Analyser):
 
     def run_analysis(self):
         logger.info('Using settings: {}'.format(self.settings_hash))
-
-        res = ShearResult()
 
         self.u = get_cube(self.cubes, 30, 201)
         self.v = get_cube(self.cubes, 30, 202)
@@ -57,10 +43,12 @@ class ShearProfileFilter(Analyser):
                                                              self.cape,
                                                              filter_on=self.filters,
                                                              **kwargs)
-        df = pd.DataFrame(index=dates, data=np.concatenate([u_samples, v_samples], axis=1))
-        df['lat'] = lat
-        df['lon'] = lon
-        df.to_hdf('filtered_profile.hdf', 'filtered_profile')
+        self.df = pd.DataFrame(index=dates, data=np.concatenate([u_samples, v_samples], axis=1))
+        self.df['lat'] = lat
+        self.df['lon'] = lon
+
+    def save(self, state=None, suite=None):
+        self.df.to_hdf('filtered_profile.hdf', 'filtered_profile')
 
     def _filter(self, u, v, w, cape,
                 filter_on=None,

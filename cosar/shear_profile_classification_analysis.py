@@ -78,6 +78,8 @@ class ShearProfileClassificationAnalyser(Analyser):
         return os.path.join(dirname, name)
 
     def run_analysis(self):
+        logger.error('OBSOLETE: use filter/normalize/pca/kmeans_cluster instead.')
+        raise Exception('Bye bye.')
         logger.info('Using settings: {}'.format(self.settings_hash))
 
         self.u = get_cube(self.cubes, 30, 201)
