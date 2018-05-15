@@ -7,9 +7,6 @@ import pandas as pd
 from sklearn.cluster import KMeans
 
 from cosar.shear_profile_settings import full_settings as fs
-from cosar.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
-                                   plot_pca_red, plot_gcm_for_schematic)
-from cosar.shear_profile_classification_plotting import ShearPlotter
 
 from omnium.analyser import Analyser
 
@@ -43,7 +40,7 @@ class ShearProfileKmeansCluster(Analyser):
     def run_analysis(self):
         logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
-        X_pca = df.values[:, :14]
+        X_pca = df.values[:, :40]
 
         # TODO: DONT LEAVE IN.
         logger.warning('DONT LEAVE IN')

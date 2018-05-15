@@ -26,7 +26,7 @@ class ShearProfilePca(Analyser):
     def run_analysis(self):
         logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
-        X_normalized = df.values[:, :14]
+        X_normalized = df.values[:, :40]
 
         X_pca, pca, n_pca_components = self._calc_pca(X_normalized)
         self.pca_df = pd.DataFrame(index=self.df.index, data=X_pca)

@@ -25,7 +25,7 @@ class ShearProfileNormalize(Analyser):
     def run_analysis(self):
         logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
-        X_filtered = df.values[:, :14]
+        X_filtered = df.values[:, :40]
 
         if self.norm is not None:
             X_mag, X_magrot, max_mag = self._normalize_feature_matrix2(X_filtered)
@@ -47,8 +47,8 @@ class ShearProfileNormalize(Analyser):
         Note: normalization is carried out using the *complete* dataset, not on the filtered
         values."""
         logger.debug('normalizing data')
-        mag = np.sqrt(X_filtered[:, :7] ** 2 + X_filtered[:, 7:] ** 2)
-        rot = np.arctan2(X_filtered[:, :7], X_filtered[:, 7:])
+        mag = np.sqrt(X_filtered[:, :20] ** 2 + X_filtered[:, 20:] ** 2)
+        rot = np.arctan2(X_filtered[:, :20], X_filtered[:, 20:])
         # Normalize the profiles by the maximum magnitude at each level.
         max_mag = mag.max(axis=1)
         logger.debug('max_mag = {}'.format(max_mag))
