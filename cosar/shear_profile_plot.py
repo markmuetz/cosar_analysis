@@ -46,7 +46,7 @@ class ShearProfilePlot(Analyser):
         self.res.X_latlon = (df_filtered['lat'].values, df_filtered['lon'].values)
         self.cubes = iris.load('au197.pc_red.198809-199308.z4.nc')
         self.u = get_cube(self.cubes, 30, 201)
-        self.res.max_mag = df_max_mag.values[0]
+        self.res.max_mag = df_max_mag.values[:, 0]
 
     def run_analysis(self):
         pass
