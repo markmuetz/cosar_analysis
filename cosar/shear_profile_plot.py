@@ -1,6 +1,7 @@
 import os
 from logging import getLogger
 import pickle
+import math
 
 import numpy as np
 import pandas as pd
@@ -49,7 +50,17 @@ class ShearProfilePlot(Analyser):
         self.res.max_mag = df_max_mag.values[:, 0]
 
     def run_analysis(self):
-        pass
+        df_filt = self.df_filtered
+        doy = [math.floor(h / 24) % 360 for h in df_filt.index]
+        month = [math.floor(d / 30) for d in doy]
+        df_filt['month'] = month
+        df_filt['doy'] = doy
+
+        # Rem zero based! i.e. 5 == june.
+        jja = ((df_filt['month'].values == 5) | (df_filt['month'].values == 6) | (df_filt['month'].values == 7))
+        son = ((df_filt['month'].values == 8) | (df_filt['month'].values == 9) | (df_filt['month'].values == 10))
+        djf = ((df_filt['month'].values == 11) | (df_filt['month'].values == 0) | (df_filt['month'].values == 1))
+        mam = ((df_filt['month'].values == 2) | (df_filt['month'].values == 3) | (df_filt['month'].values == 4))
 
     def save_path(self, name):
         base_dirname = os.path.dirname(self.figpath(''))
