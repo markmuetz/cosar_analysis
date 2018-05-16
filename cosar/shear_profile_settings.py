@@ -22,4 +22,5 @@ full_settings = AnalyserSetting(dict(
     PLOT_EGU_FIGS = False,
     NUM_EGU_SAMPLES = 10000,
     NUM_PRESSURE_LEVELS=7,
+    INDEX_850HPA=4,
 ))

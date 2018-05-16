@@ -28,7 +28,7 @@ class ShearProfileNormalize(Analyser):
         X_filtered = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 
         if self.norm is not None:
-            X_mag, X_magrot, max_mag = self._normalize_feature_matrix2(X_filtered)
+            X_mag, X_magrot, max_mag = self._normalize_feature_matrix(X_filtered)
             if self.norm == 'mag':
                 X = X_mag
             elif self.norm == 'magrot':
@@ -43,28 +43,25 @@ class ShearProfileNormalize(Analyser):
         self.norm_df.to_hdf(self.task.output_filenames[0], 'normalized_profile')
         self.max_mag_df.to_hdf(self.task.output_filenames[0], 'max_mag')
 
-    def _normalize_feature_matrix2(self, X_filtered):
-        """Perfrom normalization based on norm. Only options are norm=mag,magrot
-
-        Note: normalization is carried out using the *complete* dataset, not on the filtered
-        values."""
+    def _normalize_feature_matrix(self, X_filtered):
+        """Perfrom normalization based on norm. Only options are norm=mag,magrot"""
         logger.debug('normalizing data')
         mag = np.sqrt(X_filtered[:, :fs.NUM_PRESSURE_LEVELS] ** 2 +
                       X_filtered[:, fs.NUM_PRESSURE_LEVELS:] ** 2)
         rot = np.arctan2(X_filtered[:, :fs.NUM_PRESSURE_LEVELS],
                          X_filtered[:, fs.NUM_PRESSURE_LEVELS:])
         # Normalize the profiles by the maximum magnitude at each level.
-        max_mag = mag.max(axis=1)
+        max_mag = mag.max(axis=0)
         logger.debug('max_mag = {}'.format(max_mag))
-        norm_mag = mag / max_mag[:, None]
+        norm_mag = mag / max_mag[None, :]
         u_norm_mag = norm_mag * np.cos(rot)
         v_norm_mag = norm_mag * np.sin(rot)
         # Normalize the profiles by the rotation at level 4 == 850 hPa.
-        rot_at_level = rot[:, 4]
+        rot_at_level = rot[:, fs.INDEX_850HPA]
         norm_rot = rot - rot_at_level[:, None]
-        logger.debug('# profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4] < 1).sum()))
-        logger.debug('% profiles with mag<1 at 850 hPa: {}'.format((mag[:, 4] < 1).sum() /
-                                                                   mag[:, 4].size * 100))
+        logger.debug('# prof with mag<1 at 850 hPa: {}'.format((mag[:, fs.INDEX_850HPA] < 1).sum()))
+        logger.debug('% prof with mag<1 at 850 hPa: {}'.format((mag[:, fs.INDEX_850HPA] < 1).sum() /
+                                                                mag[:, fs.INDEX_850HPA].size * 100))
         u_norm_mag_rot = norm_mag * np.cos(norm_rot)
         v_norm_mag_rot = norm_mag * np.sin(norm_rot)
 
