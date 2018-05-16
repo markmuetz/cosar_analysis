@@ -47,7 +47,7 @@ class ShearPlotter:
             # De-normalize data.
             norm_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
             norm_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[:, None]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
@@ -56,7 +56,6 @@ class ShearPlotter:
             all_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
-        abs_max = 20
 
         for cluster_index in range(n_clusters):
             keep = kmeans_red.labels_ == cluster_index
@@ -68,13 +67,13 @@ class ShearPlotter:
             u_max = u.max(axis=0)
             u_mean = u.mean(axis=0)
             u_std = u.std(axis=0)
-            u_p25, u_p75 = np.percentile(u, (25, 75), axis=0)
+            u_p25, u_median, u_p75 = np.percentile(u, (25, 50, 75), axis=0)
 
             v_min = v.min(axis=0)
             v_max = v.max(axis=0)
             v_mean = v.mean(axis=0)
             v_std = v.std(axis=0)
-            v_p25, v_p75 = np.percentile(v, (25, 75), axis=0)
+            v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
 
             # Profile u/v plots.
             title_fmt = 'PROFILES_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
@@ -86,15 +85,19 @@ class ShearPlotter:
 
             plt.plot(u_p25, pressure, 'b:')
             plt.plot(u_p75, pressure, 'b:')
-            plt.plot(u_mean - u_std, pressure, 'b--')
-            plt.plot(u_mean + u_std, pressure, 'b--')
-            plt.plot(u_mean, pressure, 'b-', label='u')
+            plt.plot(u_median, pressure, 'b-', label="u'")
+
+            # plt.plot(u_mean - u_std, pressure, 'b--')
+            # plt.plot(u_mean + u_std, pressure, 'b--')
+            # plt.plot(u_mean, pressure, 'b-', label='u')
 
             plt.plot(v_p25, pressure, 'r:')
             plt.plot(v_p75, pressure, 'r:')
-            plt.plot(v_mean - v_std, pressure, 'r--')
-            plt.plot(v_mean + v_std, pressure, 'r--')
-            plt.plot(v_mean, pressure, 'r-', label='v')
+            plt.plot(v_median, pressure, 'r-', label="v'")
+
+            # plt.plot(v_mean - v_std, pressure, 'r--')
+            # plt.plot(v_mean + v_std, pressure, 'r--')
+            # plt.plot(v_mean, pressure, 'r-', label='v')
             plt.legend(loc='best')
 
             if False:
@@ -117,10 +120,10 @@ class ShearPlotter:
             plt.clf()
             plt.title(title)
 
-            plt.plot(u_mean, v_mean, 'k-')
-            for i in range(len(u_mean)):
-                u = u_mean[i]
-                v = v_mean[i]
+            plt.plot(u_median, v_median, 'k-')
+            for i in range(len(u_median)):
+                u = u_median[i]
+                v = v_median[i]
                 plt.annotate('{}'.format(fs.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=(-2, 2),
                              textcoords='offset points', ha='right', va='bottom')
             plt.xlim((-abs_max, abs_max))
@@ -198,19 +201,19 @@ class ShearPlotter:
             u = all_u[keep]
             v = all_v[keep]
 
-            u_mean = u.mean(axis=0)
-            v_mean = v.mean(axis=0)
+            u_p25, u_median, u_p75 = np.percentile(u, (25, 50, 75), axis=0)
+            v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
 
-            ax1.plot(u_mean, v_mean, 'k-')
+            ax1.plot(u_median, v_median, 'k-')
 
             ax1.text(0.05, 0.01, 'C{}'.format(cluster_index + 1),
                      verticalalignment='bottom', horizontalalignment='left',
                      transform=ax1.transAxes,
                      color='black', fontsize=15)
 
-            for i in range(len(u_mean)):
-                u = u_mean[i]
-                v = v_mean[i]
+            for i in range(len(u_median)):
+                u = u_median[i]
+                v = v_median[i]
                 # ax1.plot(u, v, 'k+')
 
                 if cluster_index in xy_pos_map:
@@ -218,7 +221,7 @@ class ShearPlotter:
                 else:
                     xy_pos = (-2, 2)
 
-                if i == 0 or i == len(u_mean) -1:
+                if i == 0 or i == len(u_median) -1:
                     ax1.annotate('{}'.format(fs.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=xy_pos,
                                  textcoords='offset points')
             ax1.set_xlim((-10, 25))
@@ -303,13 +306,13 @@ class ShearPlotter:
             u_max = u.max(axis=0)
             u_mean = u.mean(axis=0)
             u_std = u.std(axis=0)
-            u_p25, u_p75 = np.percentile(u, (25, 75), axis=0)
+            u_p25, u_median, u_p75 = np.percentile(u, (25, 50, 75), axis=0)
 
             v_min = v.min(axis=0)
             v_max = v.max(axis=0)
             v_mean = v.mean(axis=0)
             v_std = v.std(axis=0)
-            v_p25, v_p75 = np.percentile(v, (25, 75), axis=0)
+            v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
 
             # ax.set_title(cluster_index)
             ax.set_yticks([1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 50])
@@ -318,13 +321,13 @@ class ShearPlotter:
             ax.plot(u_p75, pressure, 'b:')
             # ax.plot(u_mean - u_std, pressure, 'b--')
             # ax.plot(u_mean + u_std, pressure, 'b--')
-            ax.plot(u_mean, pressure, 'b-', label='u')
+            ax.plot(u_median, pressure, 'b-', label='u')
 
             ax.plot(v_p25, pressure, 'r:')
             ax.plot(v_p75, pressure, 'r:')
             # ax.plot(v_mean - v_std, pressure, 'r--')
             # ax.plot(v_mean + v_std, pressure, 'r--')
-            ax.plot(v_mean, pressure, 'r-', label='v')
+            ax.plot(v_median, pressure, 'r-', label='v')
             # plt.legend(loc='best')
 
             ax.set_xlim((-10, 35))
