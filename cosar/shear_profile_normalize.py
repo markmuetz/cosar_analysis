@@ -52,6 +52,8 @@ class ShearProfileNormalize(Analyser):
                          X_filtered[:, fs.NUM_PRESSURE_LEVELS:])
         # Normalize the profiles by the maximum magnitude at each level.
         max_mag = mag.max(axis=0)
+        if fs.FAVOUR_LOWER_TROP:
+            max_mag[:fs.NUM_PRESSURE_LEVELS // 2] *= 4
         logger.debug('max_mag = {}'.format(max_mag))
         norm_mag = mag / max_mag[None, :]
         u_norm_mag = norm_mag * np.cos(rot)

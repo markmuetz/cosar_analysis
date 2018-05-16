@@ -29,7 +29,7 @@ class ShearProfilePlot(Analyser):
     def load(self):
         logger.debug('override load')
         self.df = pd.read_hdf(self.filename)
-        df_filtered = pd.read_hdf('profiles_filtered.hdf')
+        self.df_filtered = pd.read_hdf('profiles_filtered.hdf')
         df_normalized = pd.read_hdf('profiles_normalized.hdf', 'normalized_profile')
         df_max_mag = pd.read_hdf('profiles_normalized.hdf', 'max_mag')
         df_pca = pd.read_hdf('profiles_pca.hdf')
@@ -41,11 +41,11 @@ class ShearProfilePlot(Analyser):
         self.res.pca = pca
         self.res.n_pca_components = n_pca_components
         # self.res.X = pd.read_hdf('profiles_pca.hdf')
-        self.res.orig_X = df_filtered.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
+        self.res.orig_X = self.df_filtered.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
         self.res.X = df_normalized.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
         self.res.X_pca = df_pca.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
-        self.res.X_latlon = (df_filtered['lat'].values, df_filtered['lon'].values)
-        self.cubes = iris.load('au197.pc_red.198809-199308.z4.nc')
+        self.res.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
+        self.cubes = iris.load('au197a.pc19881201.nc')
         self.u = get_cube(self.cubes, 30, 201)
         self.res.max_mag = df_max_mag.values[:, 0]
 
