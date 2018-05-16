@@ -34,7 +34,8 @@ class ShearProfilePlot(Analyser):
         df_pca = pd.read_hdf('profiles_pca.hdf')
 
         self.res = pickle.load(open(self.save_path('res.pkl'), 'rb'))
-        (pca, n_pca_components) = pickle.load(open(self.save_path('pca_n_pca_components.pkl'), 'rb'))
+        (pca, n_pca_components) = pickle.load(open(self.save_path('pca_n_pca_components.pkl'),
+                                                   'rb'))
 
         self.res.pca = pca
         self.res.n_pca_components = n_pca_components
@@ -92,8 +93,10 @@ class ShearProfilePlot(Analyser):
 
             for seed in seeds:
                 disp_res = res.disp_res[(n_clusters, seed)]
-                plotter.plot_orig_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
-                plotter.plot_level_hists(use_pca, print_filt, norm, seed, res, disp_res, loc=loc)
+                plotter.plot_orig_level_hists(use_pca, print_filt,
+                                              norm, seed, res, disp_res, loc=loc)
+                plotter.plot_level_hists(use_pca, print_filt,
+                                         norm, seed, res, disp_res, loc=loc)
 
                 if loc == 'tropics':
                     if fs.PLOT_EGU_FIGS:
@@ -103,9 +106,11 @@ class ShearProfilePlot(Analyser):
                     plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                     plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if n_clusters == fs.DETAILED_CLUSTER:
-                        plotter.plot_profiles_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                        plotter.plot_profiles_geog_loc(use_pca, print_filt,
+                                                       norm, seed, res, disp_res)
                         plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                     if use_pca:
                         # plotter.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
                         pass
-                    plotter.display_cluster_cluster_dist(use_pca, print_filt, norm, seed, res, disp_res)
+                    plotter.display_cluster_cluster_dist(use_pca, print_filt,
+                                                         norm, seed, res, disp_res)

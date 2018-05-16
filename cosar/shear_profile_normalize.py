@@ -49,8 +49,10 @@ class ShearProfileNormalize(Analyser):
         Note: normalization is carried out using the *complete* dataset, not on the filtered
         values."""
         logger.debug('normalizing data')
-        mag = np.sqrt(X_filtered[:, :fs.NUM_PRESSURE_LEVELS] ** 2 + X_filtered[:, fs.NUM_PRESSURE_LEVELS:] ** 2)
-        rot = np.arctan2(X_filtered[:, :fs.NUM_PRESSURE_LEVELS], X_filtered[:, fs.NUM_PRESSURE_LEVELS:])
+        mag = np.sqrt(X_filtered[:, :fs.NUM_PRESSURE_LEVELS] ** 2 +
+                      X_filtered[:, fs.NUM_PRESSURE_LEVELS:] ** 2)
+        rot = np.arctan2(X_filtered[:, :fs.NUM_PRESSURE_LEVELS],
+                         X_filtered[:, fs.NUM_PRESSURE_LEVELS:])
         # Normalize the profiles by the maximum magnitude at each level.
         max_mag = mag.max(axis=1)
         logger.debug('max_mag = {}'.format(max_mag))

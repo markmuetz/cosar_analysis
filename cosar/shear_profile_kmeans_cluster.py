@@ -36,7 +36,8 @@ class ShearProfileKmeansCluster(Analyser):
     def load(self):
         logger.debug('override load')
         self.df = pd.read_hdf(self.filename)
-        (pca, n_pca_components) = pickle.load(open(self.save_path('pca_n_pca_components.pkl'), 'rb'))
+        (pca, n_pca_components) = pickle.load(open(self.save_path('pca_n_pca_components.pkl'),
+                                                   'rb'))
         self.n_pca_components = n_pca_components
 
     def run_analysis(self):
