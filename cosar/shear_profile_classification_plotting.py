@@ -147,7 +147,7 @@ class ShearPlotter:
             # De-normalize data.
             norm_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
             norm_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[:, None]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
@@ -279,7 +279,7 @@ class ShearPlotter:
             # De-normalize data.
             norm_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
             norm_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[:, None]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
