@@ -1,3 +1,5 @@
+import os
+import pickle
 from logging import getLogger
 
 import numpy as np
@@ -21,20 +23,31 @@ class ShearProfilePca(Analyser):
 
     def load(self):
         logger.debug('override load')
-        self.df = pd.read_hdf(self.filename)
+        self.df = pd.read_hdf(self.filename, 'normalized_profile')
 
     def run_analysis(self):
         logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
-        X_normalized = df.values[:, :40]
+        X_normalized = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 
         X_pca, pca, n_pca_components = self._calc_pca(X_normalized)
+        self.pca_n_pca_components = (pca, n_pca_components)
         self.pca_df = pd.DataFrame(index=self.df.index, data=X_pca)
         self.pca_df['lat'] = self.df['lat']
         self.pca_df['lon'] = self.df['lon']
 
     def save(self, state=None, suite=None):
         self.pca_df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
+        pickle.dump(self.pca_n_pca_components,
+                    open(self.save_path('pca_n_pca_components.pkl'), 'wb'))
+
+    def save_path(self, name):
+        # TODO: DRY.
+        base_dirname = os.path.dirname(self.figpath(''))
+        dirname = os.path.join(base_dirname, self.settings_hash)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        return os.path.join(dirname, name)
 
     def _calc_pca(self, X, n_pca_components=None, expl_var_min=fs.EXPL_VAR_MIN):
         """Calcs PCs, either with n_pca_components or by explaining over expl_var_min of the var."""

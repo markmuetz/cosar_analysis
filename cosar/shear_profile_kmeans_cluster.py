@@ -36,15 +36,14 @@ class ShearProfileKmeansCluster(Analyser):
     def load(self):
         logger.debug('override load')
         self.df = pd.read_hdf(self.filename)
+        (pca, n_pca_components) = pickle.load(open(self.save_path('pca_n_pca_components.pkl'), 'rb'))
+        self.n_pca_components = n_pca_components
 
     def run_analysis(self):
         logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
-        X_pca = df.values[:, :40]
+        X_pca = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 
-        # TODO: DONT LEAVE IN.
-        logger.warning('DONT LEAVE IN')
-        n_pca_components = 4
         self.res = ShearResult()
 
         for n_clusters in fs.CLUSTERS:
@@ -62,14 +61,14 @@ class ShearProfileKmeansCluster(Analyser):
             for seed in seeds:
                 logger.debug('seed: {}'.format(seed))
                 kmeans_red = KMeans(n_clusters=n_clusters, random_state=seed) \
-                    .fit(X_pca[:, :n_pca_components])
-                logger.debug('score: {}'.format(kmeans_red.score(X_pca[:, :n_pca_components])))
+                    .fit(X_pca[:, :self.n_pca_components])
+                logger.debug('score: {}'.format(kmeans_red.score(X_pca[:, :self.n_pca_components])))
                 logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
 
                 cluster_cluster_dist = kmeans_red.transform(kmeans_red.cluster_centers_)
                 ones = np.ones((n_clusters, n_clusters))
                 cluster_cluster_dist = np.ma.masked_array(cluster_cluster_dist, np.tril(ones))
-                self.res.disp_res[(n_clusters, seed)] = (n_pca_components, n_clusters,
+                self.res.disp_res[(n_clusters, seed)] = (self.n_pca_components, n_clusters,
                                                          kmeans_red, cluster_cluster_dist)
 
     def save(self, state=None, suite=None):

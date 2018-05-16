@@ -25,7 +25,7 @@ class ShearProfileNormalize(Analyser):
     def run_analysis(self):
         logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
-        X_filtered = df.values[:, :40]
+        X_filtered = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 
         if self.norm is not None:
             X_mag, X_magrot, max_mag = self._normalize_feature_matrix2(X_filtered)
@@ -37,9 +37,11 @@ class ShearProfileNormalize(Analyser):
         self.norm_df = pd.DataFrame(index=self.df.index, data=X)
         self.norm_df['lat'] = self.df['lat']
         self.norm_df['lon'] = self.df['lon']
+        self.max_mag_df = pd.DataFrame(data=max_mag)
 
     def save(self, state=None, suite=None):
-        self.norm_df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
+        self.norm_df.to_hdf(self.task.output_filenames[0], 'normalized_profile')
+        self.max_mag_df.to_hdf(self.task.output_filenames[0], 'max_mag')
 
     def _normalize_feature_matrix2(self, X_filtered):
         """Perfrom normalization based on norm. Only options are norm=mag,magrot
@@ -47,8 +49,8 @@ class ShearProfileNormalize(Analyser):
         Note: normalization is carried out using the *complete* dataset, not on the filtered
         values."""
         logger.debug('normalizing data')
-        mag = np.sqrt(X_filtered[:, :20] ** 2 + X_filtered[:, 20:] ** 2)
-        rot = np.arctan2(X_filtered[:, :20], X_filtered[:, 20:])
+        mag = np.sqrt(X_filtered[:, :fs.NUM_PRESSURE_LEVELS] ** 2 + X_filtered[:, fs.NUM_PRESSURE_LEVELS:] ** 2)
+        rot = np.arctan2(X_filtered[:, :fs.NUM_PRESSURE_LEVELS], X_filtered[:, fs.NUM_PRESSURE_LEVELS:])
         # Normalize the profiles by the maximum magnitude at each level.
         max_mag = mag.max(axis=1)
         logger.debug('max_mag = {}'.format(max_mag))

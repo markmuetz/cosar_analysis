@@ -21,4 +21,5 @@ full_settings = AnalyserSetting(dict(
     FIGDIR = 'fig',
     PLOT_EGU_FIGS = False,
     NUM_EGU_SAMPLES = 10000,
+    NUM_PRESSURE_LEVELS=7,
 ))
