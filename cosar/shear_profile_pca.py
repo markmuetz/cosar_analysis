@@ -36,17 +36,15 @@ def _calc_pca(X, n_pca_components=None, expl_var_min=fs.EXPL_VAR_MIN):
 class ShearProfilePca(Analyser):
     analysis_name = 'shear_profile_pca'
     single_file = True
+    settings = fs
 
     norm = 'magrot'
-
-    settings_hash = fs.get_hash()
 
     def load(self):
         logger.debug('override load')
         self.df = pd.read_hdf(self.filename, 'normalized_profile')
 
     def run_analysis(self):
-        logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
         X_normalized = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 
@@ -58,13 +56,7 @@ class ShearProfilePca(Analyser):
 
     def save(self, state=None, suite=None):
         self.pca_df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
-        pickle.dump(self.pca_n_pca_components,
-                    open(self.save_path('pca_n_pca_components.pkl'), 'wb'))
-
-    def save_path(self, name):
-        # TODO: DRY.
-        base_dirname = os.path.dirname(self.figpath(''))
-        dirname = os.path.join(base_dirname, self.settings_hash)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        return os.path.join(dirname, name)
+        dirname = os.path.dirname(self.task.output_filenames[0])
+        pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
+        pickle.dump(self.pca_n_pca_components, open(pca_pickle_path, 'wb'))
+        self.done()

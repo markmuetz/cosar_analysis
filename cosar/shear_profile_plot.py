@@ -8,8 +8,8 @@ import pandas as pd
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
 
-from cosar.egu_poster_figs import (plot_pca_cluster_results,
-                                   plot_pca_red, plot_gcm_for_schematic)
+from cosar._old_code.egu_poster_figs import (plot_pca_cluster_results,
+                                             plot_pca_red, plot_gcm_for_schematic)
 from cosar.shear_profile_classification_plotting import ShearPlotter
 from cosar.shear_profile_settings import full_settings as fs
 
@@ -19,10 +19,9 @@ logger = getLogger('cosar.spplt')
 class ShearProfilePlot(Analyser):
     analysis_name = 'shear_profile_plot'
     single_file = True
+    settings = fs
 
     loc = 'tropics'
-
-    settings_hash = fs.get_hash()
 
     def load(self):
         logger.debug('override load')
@@ -32,9 +31,12 @@ class ShearProfilePlot(Analyser):
         df_max_mag = pd.read_hdf('profiles_normalized.hdf', 'max_mag')
         df_pca = pd.read_hdf('profiles_pca.hdf')
 
-        self.res = pickle.load(open(self.save_path('res.pkl'), 'rb'))
-        (pca, n_pca_components) = pickle.load(open(self.save_path('pca_n_pca_components.pkl'),
-                                                   'rb'))
+        dirname = os.path.dirname(self.task.output_filenames[0])
+        pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
+        res_pickle_path = os.path.join(dirname, 'res.pkl')
+
+        self.res = pickle.load(open(res_pickle_path, 'rb'))
+        (pca, n_pca_components) = pickle.load(open(pca_pickle_path, 'rb'))
 
         self.res.pca = pca
         self.res.n_pca_components = n_pca_components
@@ -59,13 +61,6 @@ class ShearProfilePlot(Analyser):
         son = ((df_filt['month'].values == 8) | (df_filt['month'].values == 9) | (df_filt['month'].values == 10))
         djf = ((df_filt['month'].values == 11) | (df_filt['month'].values == 0) | (df_filt['month'].values == 1))
         mam = ((df_filt['month'].values == 2) | (df_filt['month'].values == 3) | (df_filt['month'].values == 4))
-
-    def save_path(self, name):
-        base_dirname = os.path.dirname(self.figpath(''))
-        dirname = os.path.join(base_dirname, self.settings_hash)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        return os.path.join(dirname, name)
 
     def display_results(self):
         if fs.PLOT_EGU_FIGS:

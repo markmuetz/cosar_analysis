@@ -141,15 +141,12 @@ def _filter(u, v, w, cape,
 class ShearProfileFilter(Analyser):
     analysis_name = 'shear_profile_filter'
     multi_file = True
+    settings = fs
 
     filters = ('cape', 'shear')
     loc = 'tropics'
 
-    settings_hash = fs.get_hash()
-
     def run_analysis(self):
-        logger.info('Using settings: {}'.format(self.settings_hash))
-
         self.u = get_cube(self.cubes, 30, 201)
         self.v = get_cube(self.cubes, 30, 202)
         self.w = get_cube(self.cubes, 30, 203)
@@ -176,3 +173,4 @@ class ShearProfileFilter(Analyser):
 
     def save(self, state=None, suite=None):
         self.df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
+        self.done()

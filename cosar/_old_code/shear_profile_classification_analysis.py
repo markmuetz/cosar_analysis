@@ -10,8 +10,8 @@ from omnium.utils import get_cube
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
-from cosar.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
-                                   plot_pca_red, plot_gcm_for_schematic)
+from cosar._old_code.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
+                                             plot_pca_red, plot_gcm_for_schematic)
 from cosar.shear_profile_classification_plotting import ShearPlotter
 
 logger = getLogger('cosar.spca')
@@ -34,8 +34,6 @@ fs = AnalyserSetting(dict(
     SHEAR_PERCENTILE = 75,
     INTERACTIVE = False,
     FIGDIR = 'fig',
-    PLOT_EGU_FIGS = False,
-    NUM_EGU_SAMPLES = 10000,
 ))
 
 

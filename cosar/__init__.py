@@ -1,4 +1,4 @@
-from cosar.shear_profile_classification_analysis import ShearProfileClassificationAnalyser
+# from cosar._old_code.shear_profile_classification_analysis import ShearProfileClassificationAnalyser
 from cosar.shear_profile_filter import ShearProfileFilter
 from cosar.shear_profile_kmeans_cluster import ShearProfileKmeansCluster
 from cosar.shear_profile_normalize import ShearProfileNormalize
@@ -9,7 +9,7 @@ from cosar.version import VERSION
 __version__ = VERSION
 
 analysis_classes = [
-    ShearProfileClassificationAnalyser,
+    # ShearProfileClassificationAnalyser,
     ShearProfileFilter,
     ShearProfileNormalize,
     ShearProfilePca,

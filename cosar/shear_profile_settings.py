@@ -1,16 +1,17 @@
 from omnium.analyser_setting import AnalyserSetting
+import cosar
 
-full_settings = AnalyserSetting(dict(
+full_settings = AnalyserSetting(cosar, dict(
     TROPICS_SLICE = slice(48, 97),
     NH_TROPICS_SLICE = slice(73, 97),
     SH_TROPICS_SLICE = slice(48, 72),
     USE_SEEDS = True,
     # RANDOM_SEEDS = [391137, 725164,  12042, 707637, 106586],
     RANDOM_SEEDS = [391137],
-    CLUSTERS = list(range(5, 21)),
+    # CLUSTERS = list(range(5, 21)),
     # CLUSTERS = [11],
     # CLUSTERS = [5, 10, 15, 20]
-    # CLUSTERS = [11],
+    CLUSTERS = [11],
     # CLUSTERS = [5, 10, 15, 20]
     DETAILED_CLUSTER = 11,
     N_PCA_COMPONENTS = None,

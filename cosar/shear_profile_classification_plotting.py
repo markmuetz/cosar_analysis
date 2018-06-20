@@ -1,3 +1,4 @@
+import os
 from logging import getLogger
 
 import matplotlib
@@ -21,7 +22,10 @@ class ShearPlotter:
         self.settings = settings
 
     def save_path(self, title):
-        return self.analysis.save_path(title)
+        dirname = os.path.dirname(self.analysis.task.output_filenames[0])
+        if not os.path.exists(os.path.join(dirname, 'figs')):
+            os.makedirs(os.path.join(dirname, 'figs'))
+        return os.path.join(dirname, 'figs', title)
 
     def plot_cluster_results(self, use_pca, filt, norm, seed, res, disp_res):
         n_pca_components, n_clusters, kmeans_red, *_ = disp_res

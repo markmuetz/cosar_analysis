@@ -27,20 +27,19 @@ class ShearResult(object):
 class ShearProfileKmeansCluster(Analyser):
     analysis_name = 'shear_profile_kmeans_cluster'
     single_file = True
+    settings = fs
 
     loc = 'tropics'
-
-    settings_hash = fs.get_hash()
 
     def load(self):
         logger.debug('override load')
         self.df = pd.read_hdf(self.filename)
-        (pca, n_pca_components) = pickle.load(open(self.save_path('pca_n_pca_components.pkl'),
-                                                   'rb'))
+        dirname = os.path.dirname(self.task.output_filenames[0])
+        pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
+        (pca, n_pca_components) = pickle.load(open(pca_pickle_path, 'rb'))
         self.n_pca_components = n_pca_components
 
     def run_analysis(self):
-        logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
         X_pca = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 
@@ -72,12 +71,9 @@ class ShearProfileKmeansCluster(Analyser):
                                                          kmeans_red, cluster_cluster_dist)
 
     def save(self, state=None, suite=None):
-        fs.save(self.save_path('settings.json'))
-        pickle.dump(self.res, open(self.save_path('res.pkl'), 'wb'))
+        dirname = os.path.dirname(self.task.output_filenames[0])
+        settings_path = os.path.join(dirname, 'settings.json')
+        res_pickle_path = os.path.join(dirname, 'res.pkl')
 
-    def save_path(self, name):
-        base_dirname = os.path.dirname(self.figpath(''))
-        dirname = os.path.join(base_dirname, self.settings_hash)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        return os.path.join(dirname, name)
+        fs.save(settings_path)
+        pickle.dump(self.res, open(res_pickle_path, 'wb'))

@@ -49,17 +49,15 @@ def _normalize_feature_matrix(X_filtered):
 class ShearProfileNormalize(Analyser):
     analysis_name = 'shear_profile_normalize'
     single_file = True
+    settings = fs
 
     norm = 'magrot'
-
-    settings_hash = fs.get_hash()
 
     def load(self):
         logger.debug('override load')
         self.df = pd.read_hdf(self.filename)
 
     def run_analysis(self):
-        logger.info('Using settings: {}'.format(self.settings_hash))
         df = self.df
         X_filtered = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 
@@ -78,3 +76,4 @@ class ShearProfileNormalize(Analyser):
     def save(self, state=None, suite=None):
         self.norm_df.to_hdf(self.task.output_filenames[0], 'normalized_profile')
         self.max_mag_df.to_hdf(self.task.output_filenames[0], 'max_mag')
+        self.done()
