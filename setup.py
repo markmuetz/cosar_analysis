@@ -35,6 +35,8 @@ setup(
         'numpy',
         'cartopy',
         'pandas',
+        # N.B. required to save pandas dataframes.
+        'pytables',
         'scikit-learn',
     ],
     package_data={ },
