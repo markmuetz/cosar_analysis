@@ -16,6 +16,7 @@ full_settings = AnalyserSetting(dict(
     N_PCA_COMPONENTS = None,
     EXPL_VAR_MIN = 0.9,
     CAPE_THRESH = 100,
+    SHEAR_PRESS_THRESH_HPA = 500,
     SHEAR_PERCENTILE = 75,
     INTERACTIVE = False,
     FIGDIR = 'fig',

@@ -1,16 +1,14 @@
-import os
-from logging import getLogger
-import random
 import itertools
+import os
 import pickle
+from logging import getLogger
 
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
-
 from omnium.analyser import Analyser
-from omnium.utils import get_cube
 from omnium.analyser_setting import AnalyserSetting
+from omnium.utils import get_cube
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 from cosar.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
                                    plot_pca_red, plot_gcm_for_schematic)
@@ -114,7 +112,7 @@ class ShearProfileClassificationAnalyser(Analyser):
                                                                    **kwargs)
             # PCAs common for all analysis too.
             if use_pca:
-                res.X_pca, res.pca, n_pca_components = self._calc_pca(res.X)
+                res.X_pca, res.pca, n_pca_components = _calc_pca(res.X)
             else:
                 res.X_pca = res.X
                 n_pca_components = res.X.shape[1]

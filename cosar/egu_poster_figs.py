@@ -1,11 +1,11 @@
 from logging import getLogger
 
 import matplotlib
+
 matplotlib.use('agg')
 import numpy as np
 import pylab as plt
 import cartopy.crs as ccrs
-from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 import matplotlib.ticker as mticker
 
 logger = getLogger('cosar.spca')

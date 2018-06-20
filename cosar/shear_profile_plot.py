@@ -1,18 +1,17 @@
-import os
-from logging import getLogger
-import pickle
 import math
+import os
+import pickle
+from logging import getLogger
 
-import pandas as pd
 import iris
-
-from cosar.shear_profile_settings import full_settings as fs
-from cosar.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
-                                   plot_pca_red, plot_gcm_for_schematic)
-from cosar.shear_profile_classification_plotting import ShearPlotter
-
+import pandas as pd
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
+
+from cosar.egu_poster_figs import (plot_pca_cluster_results,
+                                   plot_pca_red, plot_gcm_for_schematic)
+from cosar.shear_profile_classification_plotting import ShearPlotter
+from cosar.shear_profile_settings import full_settings as fs
 
 logger = getLogger('cosar.spplt')
 

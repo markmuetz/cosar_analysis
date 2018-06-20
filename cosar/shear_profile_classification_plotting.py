@@ -1,7 +1,8 @@
 from logging import getLogger
 
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use('agg')
 import matplotlib.gridspec as gridspec
 from matplotlib import colors

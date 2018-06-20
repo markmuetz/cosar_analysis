@@ -1,14 +1,13 @@
 import os
-from logging import getLogger
 import pickle
+from logging import getLogger
 
 import numpy as np
 import pandas as pd
+from omnium.analyser import Analyser
 from sklearn.cluster import KMeans
 
 from cosar.shear_profile_settings import full_settings as fs
-
-from omnium.analyser import Analyser
 
 logger = getLogger('cosar.spkc')
 
