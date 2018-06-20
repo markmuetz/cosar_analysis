@@ -19,7 +19,7 @@ def read(fname):
 setup(
     name='cosar',
     version=get_version(),
-    description='Low-resolution analysis',
+    description='Low-resolution GCM shear profile analysis',
     long_description=read('readme.rst'),
     author='Mark Muetzelfeldt',
     author_email='m.muetzelfeldt@pgr.reading.ac.uk',
@@ -27,7 +27,16 @@ setup(
     maintainer_email='m.muetzelfeldt@pgr.reading.ac.uk',
     packages=['cosar', 'cosar.scripts' ],
     scripts=[ ],
-    install_requires=[ ],
+    python_requires='>=3.6',
+    install_requires=[
+        'omnium',
+        'iris',
+        'matplotlib',
+        'numpy',
+        'cartopy',
+        'pandas',
+        'scikit-learn',
+    ],
     package_data={ },
     url='https://github.com/markmuetz/cosar_analysis',
     classifiers=[
