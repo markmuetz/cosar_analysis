@@ -26,12 +26,12 @@ class ShearProfilePlot(Analyser):
     def load(self):
         logger.debug('override load')
         self.df = pd.read_hdf(self.filename)
-        self.df_filtered = pd.read_hdf('profiles_filtered.hdf')
-        df_normalized = pd.read_hdf('profiles_normalized.hdf', 'normalized_profile')
-        df_max_mag = pd.read_hdf('profiles_normalized.hdf', 'max_mag')
-        df_pca = pd.read_hdf('profiles_pca.hdf')
-
         dirname = os.path.dirname(self.task.output_filenames[0])
+        self.df_filtered = pd.read_hdf(os.path.join(dirname, 'profiles_filtered.hdf'))
+        df_normalized = pd.read_hdf(os.path.join(dirname, 'profiles_normalized.hdf'), 'normalized_profile')
+        df_max_mag = pd.read_hdf(os.path.join(dirname, 'profiles_normalized.hdf'), 'max_mag')
+        df_pca = pd.read_hdf(os.path.join(dirname, 'profiles_pca.hdf'))
+
         pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
         res_pickle_path = os.path.join(dirname, 'res.pkl')
 
@@ -93,6 +93,7 @@ class ShearProfilePlot(Analyser):
             else:
                 if loc != 'tropics':
                     continue
+                continue
                 seeds = fs.RANDOM_SEEDS[:1]
 
             for seed in seeds:
