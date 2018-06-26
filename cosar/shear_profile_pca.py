@@ -64,4 +64,3 @@ class ShearProfilePca(Analyser):
         dirname = os.path.dirname(self.task.output_filenames[0])
         pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
         pickle.dump(self.pca_n_pca_components, open(pca_pickle_path, 'wb'))
-        self.done()

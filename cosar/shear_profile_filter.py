@@ -141,7 +141,7 @@ def _filter(u, v, w, cape,
 class ShearProfileFilter(Analyser):
     analysis_name = 'shear_profile_filter'
     multi_file = True
-    input_dir = 'work/19880701T0000Z/{expt}_atmos/'
+    input_dir = 'share/data/history/{expt}'
     input_filename_glob = 'au197a.pc1988*.nc'
     output_dir = 'omnium_output_dir/{settings_hash}/{expt}'
     output_filenames = ['profiles_filtered.hdf']
@@ -175,4 +175,3 @@ class ShearProfileFilter(Analyser):
 
     def save(self, state=None, suite=None):
         self.df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
-        self.done()

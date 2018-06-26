@@ -81,4 +81,3 @@ class ShearProfileNormalize(Analyser):
     def save(self, state=None, suite=None):
         self.norm_df.to_hdf(self.task.output_filenames[0], 'normalized_profile')
         self.max_mag_df.to_hdf(self.task.output_filenames[0], 'max_mag')
-        self.done()

@@ -32,7 +32,7 @@ class ShearProfileKmeansCluster(Analyser):
     input_dir = 'omnium_output_dir/{settings_hash}/{expt}'
     input_filename = 'profiles_pca.hdf'
     output_dir = 'omnium_output_dir/{settings_hash}/{expt}'
-    output_filenames = ['profiles_kmeans_clustered.hdf', 'res.pkl']
+    output_filenames = ['settings.json', 'res.pkl']
 
     loc = fs.LOC
 

@@ -18,7 +18,7 @@ logger = getLogger('cosar.spplt')
 
 class ShearProfilePlot(Analyser):
     analysis_name = 'shear_profile_plot'
-    single_file = True
+    multi_file = True
     settings = fs
 
     input_dir = 'omnium_output_dir/{settings_hash}/{expt}'
@@ -26,7 +26,6 @@ class ShearProfilePlot(Analyser):
         'profiles_filtered.hdf',
         'profiles_normalized.hdf',
         'profiles_pca.hdf',
-        'profiles_kmeans_clustered.hdf',
     ]
     output_dir = 'omnium_output_dir/{settings_hash}/{expt}/figs'
     output_filenames = ['profiles_kmeans_clustered.hdf']
@@ -35,8 +34,7 @@ class ShearProfilePlot(Analyser):
 
     def load(self):
         logger.debug('override load')
-        self.df = pd.read_hdf(self.filename)
-        dirname = os.path.dirname(self.task.output_filenames[0])
+        dirname = os.path.dirname(self.task.filenames[0])
         self.df_filtered = pd.read_hdf(os.path.join(dirname, 'profiles_filtered.hdf'))
         df_normalized = pd.read_hdf(os.path.join(dirname, 'profiles_normalized.hdf'), 'normalized_profile')
         df_max_mag = pd.read_hdf(os.path.join(dirname, 'profiles_normalized.hdf'), 'max_mag')
