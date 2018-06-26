@@ -141,10 +141,12 @@ def _filter(u, v, w, cape,
 class ShearProfileFilter(Analyser):
     analysis_name = 'shear_profile_filter'
     multi_file = True
-    settings = fs
+    input_dir = 'work/19880701T0000Z/{expt}_atmos/'
+    input_filename_glob = 'au197a.pc1988*.nc'
+    output_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    output_filenames = ['profiles_filtered.hdf']
 
-    filters = ('cape', 'shear')
-    loc = 'tropics'
+    settings = fs
 
     def run_analysis(self):
         self.u = get_cube(self.cubes, 30, 201)
@@ -155,17 +157,17 @@ class ShearProfileFilter(Analyser):
         logger.info('Cube shape: {}'.format(self.u.shape))
         self.cape = get_cube(self.cubes, 5, 233)
 
-        if self.loc == 'tropics':
+        if fs.LOC == 'tropics':
             kwargs = {'lat_slice': fs.TROPICS_SLICE}
-        elif self.loc == 'NH':
+        elif fs.LOC == 'NH':
             kwargs = {'lat_slice': fs.NH_TROPICS_SLICE}
-        elif self.loc == 'SH':
+        elif fs.LOC == 'SH':
             kwargs = {'lat_slice': fs.SH_TROPICS_SLICE}
         # kwargs['t_slice'] = slice(0, 10, 1)
 
         dates, u_samples, v_samples, lat, lon = _filter(self.u, self.v, self.w,
                                                              self.cape,
-                                                             filter_on=self.filters,
+                                                             filter_on=fs.FILTERS,
                                                              **kwargs)
         self.df = pd.DataFrame(index=dates, data=np.concatenate([u_samples, v_samples], axis=1))
         self.df['lat'] = lat

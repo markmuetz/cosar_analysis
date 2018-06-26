@@ -36,6 +36,11 @@ def _calc_pca(X, n_pca_components=None, expl_var_min=fs.EXPL_VAR_MIN):
 class ShearProfilePca(Analyser):
     analysis_name = 'shear_profile_pca'
     single_file = True
+
+    input_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    input_filename = 'profiles_normalized.hdf'
+    output_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    output_filenames = ['profiles_pca.hdf', 'pca_n_pca_components.pkl']
     settings = fs
 
     norm = 'magrot'

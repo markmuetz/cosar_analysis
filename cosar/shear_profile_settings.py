@@ -25,4 +25,6 @@ full_settings = AnalyserSetting(cosar, dict(
     NUM_PRESSURE_LEVELS=20,
     INDEX_850HPA=-4,
     FAVOUR_LOWER_TROP=True,
+    FILTERS=('cape', 'shear'),
+    LOC='tropics',
 ))

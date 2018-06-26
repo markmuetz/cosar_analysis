@@ -21,7 +21,17 @@ class ShearProfilePlot(Analyser):
     single_file = True
     settings = fs
 
-    loc = 'tropics'
+    input_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    input_filenames = [
+        'profiles_filtered.hdf',
+        'profiles_normalized.hdf',
+        'profiles_pca.hdf',
+        'profiles_kmeans_clustered.hdf',
+    ]
+    output_dir = 'omnium_output_dir/{settings_hash}/{expt}/figs'
+    output_filenames = ['profiles_kmeans_clustered.hdf']
+
+    loc = fs.LOC
 
     def load(self):
         logger.debug('override load')

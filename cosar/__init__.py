@@ -5,6 +5,7 @@ from cosar.shear_profile_normalize import ShearProfileNormalize
 from cosar.shear_profile_pca import ShearProfilePca
 from cosar.shear_profile_plot import ShearProfilePlot
 from cosar.version import VERSION
+from cosar.shear_profile_settings import full_settings as analysis_settings
 
 __version__ = VERSION
 

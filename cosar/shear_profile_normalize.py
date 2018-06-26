@@ -49,6 +49,11 @@ def _normalize_feature_matrix(X_filtered):
 class ShearProfileNormalize(Analyser):
     analysis_name = 'shear_profile_normalize'
     single_file = True
+    input_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    input_filename = 'profiles_filtered.hdf'
+    output_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    output_filenames = ['profiles_normalized.hdf']
+
     settings = fs
 
     norm = 'magrot'
