@@ -47,7 +47,7 @@ class ShearProfilePca(Analyser):
 
     def load(self):
         logger.debug('override load')
-        self.df = pd.read_hdf(self.filename, 'normalized_profile')
+        self.df = pd.read_hdf(self.task.filenames[0], 'normalized_profile')
 
     def run_analysis(self):
         df = self.df

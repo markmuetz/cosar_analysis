@@ -60,7 +60,7 @@ class ShearProfileNormalize(Analyser):
 
     def load(self):
         logger.debug('override load')
-        self.df = pd.read_hdf(self.filenames[0])
+        self.df = pd.read_hdf(self.task.filenames[0])
 
     def run_analysis(self):
         df = self.df

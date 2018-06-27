@@ -26,6 +26,8 @@ class ShearProfilePlot(Analyser):
         'profiles_filtered.hdf',
         'profiles_normalized.hdf',
         'profiles_pca.hdf',
+        'pca_n_pca_components.pkl',
+        'res.pkl',
     ]
     output_dir = 'omnium_output_dir/{version_dir}/{expt}/figs'
     output_filenames = ['shear_profile_plot.dummy']
@@ -35,16 +37,12 @@ class ShearProfilePlot(Analyser):
     def load(self):
         logger.debug('override load')
         dirname = os.path.dirname(self.task.filenames[0])
-        self.df_filtered = pd.read_hdf(os.path.join(dirname, 'profiles_filtered.hdf'))
-        df_normalized = pd.read_hdf(os.path.join(dirname, 'profiles_normalized.hdf'), 'normalized_profile')
-        df_max_mag = pd.read_hdf(os.path.join(dirname, 'profiles_normalized.hdf'), 'max_mag')
-        df_pca = pd.read_hdf(os.path.join(dirname, 'profiles_pca.hdf'))
-
-        pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
-        res_pickle_path = os.path.join(dirname, 'res.pkl')
-
-        self.res = pickle.load(open(res_pickle_path, 'rb'))
-        (pca, n_pca_components) = pickle.load(open(pca_pickle_path, 'rb'))
+        self.df_filtered = pd.read_hdf(self.task.filenames[0])
+        df_normalized = pd.read_hdf(self.task.filenames[1], 'normalized_profile')
+        df_max_mag = pd.read_hdf(self.task.filenames[1], 'max_mag')
+        df_pca = pd.read_hdf(self.task.filenames[2])
+        self.res = pickle.load(open(self.task.filenames[3], 'rb'))
+        (pca, n_pca_components) = pickle.load(open(self.task.filenames[4], 'rb'))
 
         self.res.pca = pca
         self.res.n_pca_components = n_pca_components
