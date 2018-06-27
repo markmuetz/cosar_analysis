@@ -37,9 +37,9 @@ class ShearProfilePca(Analyser):
     analysis_name = 'shear_profile_pca'
     single_file = True
 
-    input_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    input_dir = 'omnium_output_dir/{version_dir}/{expt}'
     input_filename = 'profiles_normalized.hdf'
-    output_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    output_dir = 'omnium_output_dir/{version_dir}/{expt}'
     output_filenames = ['profiles_pca.hdf', 'pca_n_pca_components.pkl']
     settings = fs
 

@@ -143,12 +143,15 @@ class ShearProfileFilter(Analyser):
     multi_file = True
     input_dir = 'share/data/history/{expt}'
     input_filename_glob = 'au197a.pc1988*.nc'
-    output_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    output_dir = 'omnium_output_dir/{version_dir}/{expt}'
     output_filenames = ['profiles_filtered.hdf']
 
     settings = fs
 
-    def run_analysis(self):
+    def load(self):
+        self.load_cubes()
+
+    def run(self):
         self.u = get_cube(self.cubes, 30, 201)
         self.v = get_cube(self.cubes, 30, 202)
         self.w = get_cube(self.cubes, 30, 203)

@@ -21,14 +21,14 @@ class ShearProfilePlot(Analyser):
     multi_file = True
     settings = fs
 
-    input_dir = 'omnium_output_dir/{settings_hash}/{expt}'
+    input_dir = 'omnium_output_dir/{version_dir}/{expt}'
     input_filenames = [
         'profiles_filtered.hdf',
         'profiles_normalized.hdf',
         'profiles_pca.hdf',
     ]
-    output_dir = 'omnium_output_dir/{settings_hash}/{expt}/figs'
-    output_filenames = ['profiles_kmeans_clustered.hdf']
+    output_dir = 'omnium_output_dir/{version_dir}/{expt}/figs'
+    output_filenames = ['shear_profile_plot.dummy']
 
     loc = fs.LOC
 
@@ -69,6 +69,10 @@ class ShearProfilePlot(Analyser):
         son = ((df_filt['month'].values == 8) | (df_filt['month'].values == 9) | (df_filt['month'].values == 10))
         djf = ((df_filt['month'].values == 11) | (df_filt['month'].values == 0) | (df_filt['month'].values == 1))
         mam = ((df_filt['month'].values == 2) | (df_filt['month'].values == 3) | (df_filt['month'].values == 4))
+
+    def save_results(self, state=None, suite=None):
+        with open(self.task.output_filenames[0], 'w') as f:
+            f.write('Finished')
 
     def display_results(self):
         if fs.PLOT_EGU_FIGS:
