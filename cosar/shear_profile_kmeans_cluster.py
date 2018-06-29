@@ -26,7 +26,7 @@ class ShearResult(object):
 
 class ShearProfileKmeansCluster(Analyser):
     analysis_name = 'shear_profile_kmeans_cluster'
-    single_file = True
+    multi_file = True
     settings = fs
 
     input_dir = 'omnium_output_dir/{version_dir}/{expt}'
@@ -42,7 +42,7 @@ class ShearProfileKmeansCluster(Analyser):
         (pca, n_pca_components) = pickle.load(open(self.task.filenames[1], 'rb'))
         self.n_pca_components = n_pca_components
 
-    def run_analysis(self):
+    def run(self):
         df = self.df
         X_pca = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 

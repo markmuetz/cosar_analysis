@@ -49,7 +49,7 @@ class ShearProfilePca(Analyser):
         logger.debug('override load')
         self.df = pd.read_hdf(self.task.filenames[0], 'normalized_profile')
 
-    def run_analysis(self):
+    def run(self):
         df = self.df
         X_normalized = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
 

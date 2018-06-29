@@ -26,8 +26,8 @@ class ShearProfilePlot(Analyser):
         'profiles_filtered.hdf',
         'profiles_normalized.hdf',
         'profiles_pca.hdf',
-        'pca_n_pca_components.pkl',
         'res.pkl',
+        'pca_n_pca_components.pkl',
     ]
     output_dir = 'omnium_output_dir/{version_dir}/{expt}/figs'
     output_filenames = ['shear_profile_plot.dummy']
@@ -55,7 +55,7 @@ class ShearProfilePlot(Analyser):
         self.u = get_cube(self.cubes, 30, 201)
         self.res.max_mag = df_max_mag.values[:, 0]
 
-    def run_analysis(self):
+    def run(self):
         df_filt = self.df_filtered
         doy = [math.floor(h / 24) % 360 for h in df_filt.index]
         month = [math.floor(d / 30) for d in doy]
@@ -68,7 +68,7 @@ class ShearProfilePlot(Analyser):
         djf = ((df_filt['month'].values == 11) | (df_filt['month'].values == 0) | (df_filt['month'].values == 1))
         mam = ((df_filt['month'].values == 2) | (df_filt['month'].values == 3) | (df_filt['month'].values == 4))
 
-    def save_results(self, state=None, suite=None):
+    def save(self, state=None, suite=None):
         with open(self.task.output_filenames[0], 'w') as f:
             f.write('Finished')
 
