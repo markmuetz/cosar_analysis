@@ -23,15 +23,15 @@ class ShearProfilePlot(Analyser):
 
     input_dir = 'omnium_output_dir/{version_dir}/{expt}'
     input_filenames = [
-        'profiles_filtered.hdf',
-        'profiles_normalized.hdf',
-        'profiles_pca.hdf',
-        'res.pkl',
-        'pca_n_pca_components.pkl',
-        'au197a.pc19880901.nc',
+        '{input_dir}/profiles_filtered.hdf',
+        '{input_dir}/profiles_normalized.hdf',
+        '{input_dir}/profiles_pca.hdf',
+        '{input_dir}/res.pkl',
+        '{input_dir}/pca_n_pca_components.pkl',
+        'share/data/history/{expt}/au197a.pc19880901.nc',
     ]
     output_dir = 'omnium_output_dir/{version_dir}/{expt}/figs'
-    output_filenames = ['shear_profile_plot.dummy']
+    output_filenames = ['{output_dir}/shear_profile_plot.dummy']
 
     loc = fs.LOC
 

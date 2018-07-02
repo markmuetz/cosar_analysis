@@ -30,9 +30,9 @@ class ShearProfileKmeansCluster(Analyser):
     settings = fs
 
     input_dir = 'omnium_output_dir/{version_dir}/{expt}'
-    input_filenames = ['profiles_pca.hdf', 'pca_n_pca_components.pkl']
+    input_filenames = ['{input_dir}/profiles_pca.hdf', '{input_dir}/pca_n_pca_components.pkl']
     output_dir = 'omnium_output_dir/{version_dir}/{expt}'
-    output_filenames = ['settings.json', 'res.pkl']
+    output_filenames = ['{output_dir}/settings.json', '{output_dir}/res.pkl']
 
     loc = fs.LOC
 

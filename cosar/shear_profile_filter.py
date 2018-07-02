@@ -142,9 +142,9 @@ class ShearProfileFilter(Analyser):
     analysis_name = 'shear_profile_filter'
     multi_file = True
     input_dir = 'share/data/history/{expt}'
-    input_filename_glob = 'au197a.pc1988*.nc'
+    input_filename_glob = '{input_dir}/au197a.pc1988*.nc'
     output_dir = 'omnium_output_dir/{version_dir}/{expt}'
-    output_filenames = ['profiles_filtered.hdf']
+    output_filenames = ['{output_dir}/profiles_filtered.hdf']
 
     settings = fs
 
