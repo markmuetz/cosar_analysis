@@ -28,6 +28,7 @@ class ShearProfilePlot(Analyser):
         'profiles_pca.hdf',
         'res.pkl',
         'pca_n_pca_components.pkl',
+        'au197a.pc19880901.nc',
     ]
     output_dir = 'omnium_output_dir/{version_dir}/{expt}/figs'
     output_filenames = ['shear_profile_plot.dummy']
@@ -43,6 +44,7 @@ class ShearProfilePlot(Analyser):
         df_pca = pd.read_hdf(self.task.filenames[2])
         self.res = pickle.load(open(self.task.filenames[3], 'rb'))
         (pca, n_pca_components) = pickle.load(open(self.task.filenames[4], 'rb'))
+        self.cubes = iris.load(self.task.filenames[5])
 
         self.res.pca = pca
         self.res.n_pca_components = n_pca_components
@@ -51,7 +53,6 @@ class ShearProfilePlot(Analyser):
         self.res.X = df_normalized.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
         self.res.X_pca = df_pca.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
         self.res.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
-        self.cubes = iris.load('au197a.pc19881201.nc')
         self.u = get_cube(self.cubes, 30, 201)
         self.res.max_mag = df_max_mag.values[:, 0]
 
