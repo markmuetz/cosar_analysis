@@ -22,10 +22,7 @@ class ShearPlotter:
         self.settings = settings
 
     def save_path(self, title):
-        dirname = os.path.dirname(self.analysis.task.output_filenames[0])
-        if not os.path.exists(os.path.join(dirname, 'figs')):
-            os.makedirs(os.path.join(dirname, 'figs'))
-        return os.path.join(dirname, 'figs', title)
+        return self.analysis.file_path(title)
 
     def plot_cluster_results(self, use_pca, filt, norm, seed, res, disp_res):
         n_pca_components, n_clusters, kmeans_red, *_ = disp_res
@@ -39,7 +36,6 @@ class ShearPlotter:
                 plt.title(title)
 
                 plt.scatter(res.X_pca[:, i], res.X_pca[:, j], c=kmeans_red.labels_)
-
                 plt.savefig(self.save_path(title) + '.png')
 
         plt.close("all")
