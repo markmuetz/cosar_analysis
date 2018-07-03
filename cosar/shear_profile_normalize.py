@@ -49,9 +49,9 @@ def _normalize_feature_matrix(X_filtered):
 class ShearProfileNormalize(Analyser):
     analysis_name = 'shear_profile_normalize'
     single_file = True
-    input_dir = 'omnium_output_dir/{version_dir}/{expt}'
+    input_dir = 'omnium_output/{version_dir}/{expt}'
     input_filename = '{input_dir}/profiles_filtered.hdf'
-    output_dir = 'omnium_output_dir/{version_dir}/{expt}'
+    output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = ['{output_dir}/profiles_normalized.hdf']
 
     settings = fs
