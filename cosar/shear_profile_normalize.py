@@ -4,32 +4,30 @@ import numpy as np
 import pandas as pd
 from omnium.analyser import Analyser
 
-from cosar.shear_profile_settings import full_settings as fs
-
 logger = getLogger('cosar.spn')
 
 
-def _normalize_feature_matrix(X_filtered):
+def _normalize_feature_matrix(settings, X_filtered):
     """Perfrom normalization based on norm. Only options are norm=mag,magrot"""
     logger.debug('normalizing data')
-    mag = np.sqrt(X_filtered[:, :fs.NUM_PRESSURE_LEVELS] ** 2 +
-                  X_filtered[:, fs.NUM_PRESSURE_LEVELS:] ** 2)
-    rot = np.arctan2(X_filtered[:, :fs.NUM_PRESSURE_LEVELS],
-                     X_filtered[:, fs.NUM_PRESSURE_LEVELS:])
+    mag = np.sqrt(X_filtered[:, :settings.NUM_PRESSURE_LEVELS] ** 2 +
+                  X_filtered[:, settings.NUM_PRESSURE_LEVELS:] ** 2)
+    rot = np.arctan2(X_filtered[:, :settings.NUM_PRESSURE_LEVELS],
+                     X_filtered[:, settings.NUM_PRESSURE_LEVELS:])
     # Normalize the profiles by the maximum magnitude at each level.
     max_mag = mag.max(axis=0)
-    if fs.FAVOUR_LOWER_TROP:
-        max_mag[:fs.NUM_PRESSURE_LEVELS // 2] *= 4
+    if settings.FAVOUR_LOWER_TROP:
+        max_mag[:settings.NUM_PRESSURE_LEVELS // 2] *= 4
     logger.debug('max_mag = {}'.format(max_mag))
     norm_mag = mag / max_mag[None, :]
     u_norm_mag = norm_mag * np.cos(rot)
     v_norm_mag = norm_mag * np.sin(rot)
     # Normalize the profiles by the rotation at level 4 == 850 hPa.
-    rot_at_level = rot[:, fs.INDEX_850HPA]
+    rot_at_level = rot[:, settings.INDEX_850HPA]
     norm_rot = rot - rot_at_level[:, None]
-    logger.debug('# prof with mag<1 at 850 hPa: {}'.format((mag[:, fs.INDEX_850HPA] < 1).sum()))
-    logger.debug('% prof with mag<1 at 850 hPa: {}'.format((mag[:, fs.INDEX_850HPA] < 1).sum() /
-                                                            mag[:, fs.INDEX_850HPA].size * 100))
+    logger.debug('# prof with mag<1 at 850 hPa: {}'.format((mag[:, settings.INDEX_850HPA] < 1).sum()))
+    logger.debug('% prof with mag<1 at 850 hPa: {}'.format((mag[:, settings.INDEX_850HPA] < 1).sum() /
+                                                            mag[:, settings.INDEX_850HPA].size * 100))
     u_norm_mag_rot = norm_mag * np.cos(norm_rot)
     v_norm_mag_rot = norm_mag * np.sin(norm_rot)
 
@@ -54,8 +52,6 @@ class ShearProfileNormalize(Analyser):
     output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = ['{output_dir}/profiles_normalized.hdf']
 
-    settings = fs
-
     norm = 'magrot'
 
     def load(self):
@@ -64,10 +60,10 @@ class ShearProfileNormalize(Analyser):
 
     def run(self):
         df = self.df
-        X_filtered = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
+        X_filtered = df.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
         if self.norm is not None:
-            X_mag, X_magrot, max_mag = _normalize_feature_matrix(X_filtered)
+            X_mag, X_magrot, max_mag = _normalize_feature_matrix(self.settings, X_filtered)
             if self.norm == 'mag':
                 X = X_mag
             elif self.norm == 'magrot':

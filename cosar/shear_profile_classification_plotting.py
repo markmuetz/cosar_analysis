@@ -11,8 +11,6 @@ import pylab as plt
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
-from cosar.shear_profile_settings import full_settings as fs
-
 logger = getLogger('cosar.spca')
 
 
@@ -46,15 +44,15 @@ class ShearPlotter:
 
         if res.max_mag is not None:
             # De-normalize data.
-            norm_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
-            norm_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
+            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
             mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
         else:
-            all_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
-            all_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
+            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
 
@@ -125,7 +123,7 @@ class ShearPlotter:
             for i in range(len(u_median)):
                 u = u_median[i]
                 v = v_median[i]
-                plt.annotate('{}'.format(fs.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=(-2, 2),
+                plt.annotate('{}'.format(self.settings.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=(-2, 2),
                              textcoords='offset points', ha='right', va='bottom')
             plt.xlim((-abs_max, abs_max))
             plt.ylim((-abs_max, abs_max))
@@ -146,15 +144,15 @@ class ShearPlotter:
 
         if res.max_mag is not None:
             # De-normalize data.
-            norm_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
-            norm_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
+            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
             mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
         else:
-            all_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
-            all_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
+            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
@@ -223,7 +221,7 @@ class ShearPlotter:
                     xy_pos = (-2, 2)
 
                 if i == 0 or i == len(u_median) -1:
-                    ax1.annotate('{}'.format(fs.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=xy_pos,
+                    ax1.annotate('{}'.format(self.settings.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=xy_pos,
                                  textcoords='offset points')
             ax1.set_xlim((-10, 25))
             ax1.set_ylim((-6, 6))
@@ -278,15 +276,15 @@ class ShearPlotter:
 
         if res.max_mag is not None:
             # De-normalize data.
-            norm_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
-            norm_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
+            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
             mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
         else:
-            all_u = res.X[:, :fs.NUM_PRESSURE_LEVELS]
-            all_v = res.X[:, fs.NUM_PRESSURE_LEVELS:]
+            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
@@ -370,8 +368,8 @@ class ShearPlotter:
         title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
         vels = res.orig_X
-        u = vels[:, :fs.NUM_PRESSURE_LEVELS]
-        v = vels[:, fs.NUM_PRESSURE_LEVELS:]
+        u = vels[:, :self.settings.NUM_PRESSURE_LEVELS]
+        v = vels[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         min_u = u.min()
         max_u = u.max()
@@ -404,8 +402,8 @@ class ShearPlotter:
         title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
         vels = res.X
-        u = vels[:, :fs.NUM_PRESSURE_LEVELS]
-        v = vels[:, fs.NUM_PRESSURE_LEVELS:]
+        u = vels[:, :self.settings.NUM_PRESSURE_LEVELS]
+        v = vels[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         min_u = u.min()
         max_u = u.max()
@@ -501,11 +499,11 @@ class ShearPlotter:
             pca_comp = res.X_pca[i].copy()
             pca_comp[n_pca_components:] = 0
             plt.clf()
-            plt.plot(profile[:fs.NUM_PRESSURE_LEVELS], pressure, 'b-')
-            plt.plot(profile[fs.NUM_PRESSURE_LEVELS:], pressure, 'r-')
+            plt.plot(profile[:self.settings.NUM_PRESSURE_LEVELS], pressure, 'b-')
+            plt.plot(profile[self.settings.NUM_PRESSURE_LEVELS:], pressure, 'r-')
             red_profile = res.pca.inverse_transform(pca_comp)
-            plt.plot(red_profile[:fs.NUM_PRESSURE_LEVELS], pressure, 'b--')
-            plt.plot(red_profile[fs.NUM_PRESSURE_LEVELS:], pressure, 'r--')
+            plt.plot(red_profile[:self.settings.NUM_PRESSURE_LEVELS], pressure, 'b--')
+            plt.plot(red_profile[self.settings.NUM_PRESSURE_LEVELS:], pressure, 'r--')
 
             plt.ylim((pressure[-1], pressure[0]))
             plt.savefig(self.save_path(title) + '.png')
@@ -525,7 +523,7 @@ class ShearPlotter:
             plt.clf()
             plt.title(title)
 
-            pca_u, pca_v = sample[:fs.NUM_PRESSURE_LEVELS], sample[fs.NUM_PRESSURE_LEVELS:]
+            pca_u, pca_v = sample[:self.settings.NUM_PRESSURE_LEVELS], sample[self.settings.NUM_PRESSURE_LEVELS:]
             plt.plot(pca_u, pressure, 'b-', label='pca_u')
             plt.plot(pca_v, pressure, 'r-', label='pca_v')
 
@@ -553,7 +551,7 @@ class ShearPlotter:
 
             sample = res.pca.components_[pca_index]
 
-            pca_u, pca_v = sample[:fs.NUM_PRESSURE_LEVELS], sample[fs.NUM_PRESSURE_LEVELS:]
+            pca_u, pca_v = sample[:self.settings.NUM_PRESSURE_LEVELS], sample[self.settings.NUM_PRESSURE_LEVELS:]
             ax.plot(pca_u, pressure, 'b-', label='u')
             ax.plot(pca_v, pressure, 'r-', label='v')
 

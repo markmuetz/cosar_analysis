@@ -21,5 +21,5 @@ def test_cosar_analysis_classes(mock_makedirs, mock_exists):
     task.filenames = ['/a/b/c.txt']
     task.output_filenames = ['/a/b/c.out']
     for analysis_class in cosar.analysis_classes:
-        analyser = analysis_class(suite, task)
+        analyser = analysis_class(suite, task, None)
         assert analyser

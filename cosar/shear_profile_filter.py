@@ -5,8 +5,6 @@ import pandas as pd
 from omnium.analyser import Analyser
 from omnium.utils import get_cube
 
-from cosar.shear_profile_settings import full_settings as fs
-
 logger = getLogger('cosar.spf')
 
 
@@ -31,7 +29,7 @@ def _extract_lat_lon(lat_slice, lon_slice, u):
     return lat, lon
 
 
-def _filter(u, v, w, cape,
+def _filter(settings, u, v, w, cape,
             filter_on=None,
             t_slice=slice(None),
             lat_slice=slice(None),
@@ -58,8 +56,8 @@ def _filter(u, v, w, cape,
     assert np.all(dp > 0)
     shear_pressure = (pressure[:-1] + pressure[1:]) / 2
 
-    # Find first index where shear pressure higher than fs.SHEAR_PRESS_THRESH_HPA.
-    shear_pressure_thresh_index = np.where(shear_pressure > fs.SHEAR_PRESS_THRESH_HPA)[0][0]
+    # Find first index where shear pressure higher than settings.SHEAR_PRESS_THRESH_HPA.
+    shear_pressure_thresh_index = np.where(shear_pressure > settings.SHEAR_PRESS_THRESH_HPA)[0][0]
     # Rem. that pressure[0] is the *lowest* pressure, i.e. the highest height.
     # So to filter out the and get the lower troposphere you do e.g. shear_pressure[thresh:]
     logger.info('Use pressures: {}'.format(shear_pressure[shear_pressure_thresh_index:]))
@@ -80,7 +78,7 @@ def _filter(u, v, w, cape,
             max_shear.append(max_profile_shear.flatten())
 
         max_shear = np.concatenate(max_shear)
-        max_profile_shear_percentile = np.percentile(max_shear, fs.SHEAR_PERCENTILE)
+        max_profile_shear_percentile = np.percentile(max_shear, settings.SHEAR_PERCENTILE)
 
     # Recreate iterators where each slice is a time slice (the missing dim.)
     # So that I can loop over them again.
@@ -112,7 +110,7 @@ def _filter(u, v, w, cape,
             all_filters += '_' + filter
 
             if filter == 'cape':
-                keep = cape_slice.data.flatten() > fs.CAPE_THRESH
+                keep = cape_slice.data.flatten() > settings.CAPE_THRESH
             elif filter == 'shear':
                 # Take max along pressure-axis.
                 shear = _calc_shear(u_slice, v_slice, dp)
@@ -146,8 +144,6 @@ class ShearProfileFilter(Analyser):
     output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = ['{output_dir}/profiles_filtered.hdf']
 
-    settings = fs
-
     def load(self):
         self.load_cubes()
 
@@ -160,18 +156,18 @@ class ShearProfileFilter(Analyser):
         logger.info('Cube shape: {}'.format(self.u.shape))
         self.cape = get_cube(self.cubes, 5, 233)
 
-        if fs.LOC == 'tropics':
-            kwargs = {'lat_slice': fs.TROPICS_SLICE}
-        elif fs.LOC == 'NH':
-            kwargs = {'lat_slice': fs.NH_TROPICS_SLICE}
-        elif fs.LOC == 'SH':
-            kwargs = {'lat_slice': fs.SH_TROPICS_SLICE}
+        if self.settings.LOC == 'tropics':
+            kwargs = {'lat_slice': self.settings.TROPICS_SLICE}
+        elif self.settings.LOC == 'NH':
+            kwargs = {'lat_slice': self.settings.NH_TROPICS_SLICE}
+        elif self.settings.LOC == 'SH':
+            kwargs = {'lat_slice': self.settings.SH_TROPICS_SLICE}
         # kwargs['t_slice'] = slice(0, 10, 1)
 
-        dates, u_samples, v_samples, lat, lon = _filter(self.u, self.v, self.w,
-                                                             self.cape,
-                                                             filter_on=fs.FILTERS,
-                                                             **kwargs)
+        dates, u_samples, v_samples, lat, lon = _filter(self.settings, self.u, self.v, self.w,
+                                                        self.cape,
+                                                        filter_on=self.settings.FILTERS,
+                                                        **kwargs)
         self.df = pd.DataFrame(index=dates, data=np.concatenate([u_samples, v_samples], axis=1))
         self.df['lat'] = lat
         self.df['lon'] = lon

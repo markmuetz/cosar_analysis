@@ -6,13 +6,13 @@ import pandas as pd
 from omnium.analyser import Analyser
 from sklearn.decomposition import PCA
 
-from cosar.shear_profile_settings import full_settings as fs
-
 logger = getLogger('cosar.spp')
 
 
-def _calc_pca(X, n_pca_components=None, expl_var_min=fs.EXPL_VAR_MIN):
+def _calc_pca(settings, X, n_pca_components=None, expl_var_min=None):
     """Calcs PCs, either with n_pca_components or by explaining over expl_var_min of the var."""
+    if not expl_var_min:
+        expl_var_min = settings.EXPL_VAR_MIN
     pca = PCA(n_components=X.shape[1])
     pca.fit(X)
 
@@ -41,7 +41,6 @@ class ShearProfilePca(Analyser):
     input_filename = '{input_dir}/profiles_normalized.hdf'
     output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = ['{output_dir}/profiles_pca.hdf', '{output_dir}/pca_n_pca_components.pkl']
-    settings = fs
 
     norm = 'magrot'
 
@@ -51,9 +50,9 @@ class ShearProfilePca(Analyser):
 
     def run(self):
         df = self.df
-        X_normalized = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
+        X_normalized = df.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
-        X_pca, pca, n_pca_components = _calc_pca(X_normalized)
+        X_pca, pca, n_pca_components = _calc_pca(self.settings, X_normalized)
         self.pca_n_pca_components = (pca, n_pca_components)
         self.pca_df = pd.DataFrame(index=self.df.index, data=X_pca)
         self.pca_df['lat'] = self.df['lat']

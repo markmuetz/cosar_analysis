@@ -7,8 +7,6 @@ import pandas as pd
 from omnium.analyser import Analyser
 from sklearn.cluster import KMeans
 
-from cosar.shear_profile_settings import full_settings as fs
-
 logger = getLogger('cosar.spkc')
 
 
@@ -27,14 +25,11 @@ class ShearResult(object):
 class ShearProfileKmeansCluster(Analyser):
     analysis_name = 'shear_profile_kmeans_cluster'
     multi_file = True
-    settings = fs
 
     input_dir = 'omnium_output/{version_dir}/{expt}'
     input_filenames = ['{input_dir}/profiles_pca.hdf', '{input_dir}/pca_n_pca_components.pkl']
     output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = ['{output_dir}/settings.json', '{output_dir}/res.pkl']
-
-    loc = fs.LOC
 
     def load(self):
         logger.debug('override load')
@@ -44,20 +39,20 @@ class ShearProfileKmeansCluster(Analyser):
 
     def run(self):
         df = self.df
-        X_pca = df.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
+        X_pca = df.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
         self.res = ShearResult()
 
-        for n_clusters in fs.CLUSTERS:
-            if n_clusters == fs.DETAILED_CLUSTER:
-                if self.loc == 'tropics':
-                    seeds = fs.RANDOM_SEEDS
+        for n_clusters in self.settings.CLUSTERS:
+            if n_clusters == self.settings.DETAILED_CLUSTER:
+                if self.settings.LOC == 'tropics':
+                    seeds = self.settings.RANDOM_SEEDS
                 else:
-                    seeds = fs.RANDOM_SEEDS[:1]
+                    seeds = self.settings.RANDOM_SEEDS[:1]
             else:
-                if self.loc != 'tropics':
+                if self.settings.LOC != 'tropics':
                     continue
-                seeds = fs.RANDOM_SEEDS[:1]
+                seeds = self.settings.RANDOM_SEEDS[:1]
             logger.info('Running for n_clusters = {}'.format(n_clusters))
 
             for seed in seeds:
@@ -78,5 +73,5 @@ class ShearProfileKmeansCluster(Analyser):
         settings_path = os.path.join(dirname, 'settings.json')
         res_pickle_path = os.path.join(dirname, 'res.pkl')
 
-        fs.save(settings_path)
+        self.settings.save(settings_path)
         pickle.dump(self.res, open(res_pickle_path, 'wb'))

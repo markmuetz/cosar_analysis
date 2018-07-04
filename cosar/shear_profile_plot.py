@@ -11,7 +11,6 @@ from omnium.utils import get_cube
 from cosar._old_code.egu_poster_figs import (plot_pca_cluster_results,
                                              plot_pca_red, plot_gcm_for_schematic)
 from cosar.shear_profile_classification_plotting import ShearPlotter
-from cosar.shear_profile_settings import full_settings as fs
 
 logger = getLogger('cosar.spplt')
 
@@ -19,7 +18,6 @@ logger = getLogger('cosar.spplt')
 class ShearProfilePlot(Analyser):
     analysis_name = 'shear_profile_plot'
     multi_file = True
-    settings = fs
 
     input_dir = 'omnium_output/{version_dir}/{expt}'
     input_filenames = [
@@ -32,8 +30,6 @@ class ShearProfilePlot(Analyser):
     ]
     output_dir = 'omnium_output/{version_dir}/{expt}/figs'
     output_filenames = ['{output_dir}/shear_profile_plot.dummy']
-
-    loc = fs.LOC
 
     def load(self):
         logger.debug('override load')
@@ -49,9 +45,9 @@ class ShearProfilePlot(Analyser):
         self.res.pca = pca
         self.res.n_pca_components = n_pca_components
         # self.res.X = pd.read_hdf('profiles_pca.hdf')
-        self.res.orig_X = self.df_filtered.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
-        self.res.X = df_normalized.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
-        self.res.X_pca = df_pca.values[:, :fs.NUM_PRESSURE_LEVELS * 2]
+        self.res.orig_X = self.df_filtered.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
+        self.res.X = df_normalized.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
+        self.res.X_pca = df_pca.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.res.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
         self.u = get_cube(self.cubes, 30, 201)
         self.res.max_mag = df_max_mag.values[:, 0]
@@ -74,10 +70,10 @@ class ShearProfilePlot(Analyser):
             f.write('Finished')
 
     def display_results(self):
-        if fs.PLOT_EGU_FIGS:
+        if self.settings.PLOT_EGU_FIGS:
             plot_gcm_for_schematic()
 
-        plotter = ShearPlotter(self, fs)
+        plotter = ShearPlotter(self, self.settings)
 
         # plotter.display_veering_backing()
 
@@ -95,17 +91,17 @@ class ShearProfilePlot(Analyser):
             plotter.plot_four_pca_profiles(use_pca, print_filt, norm, res)
             # self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
-        for n_clusters in fs.CLUSTERS:
-            if n_clusters == fs.DETAILED_CLUSTER:
+        for n_clusters in self.settings.CLUSTERS:
+            if n_clusters == self.settings.DETAILED_CLUSTER:
                 if loc == 'tropics':
-                    seeds = fs.RANDOM_SEEDS
+                    seeds = self.settings.RANDOM_SEEDS
                 else:
-                    seeds = fs.RANDOM_SEEDS[:1]
+                    seeds = self.settings.RANDOM_SEEDS[:1]
             else:
                 if loc != 'tropics':
                     continue
                 continue
-                seeds = fs.RANDOM_SEEDS[:1]
+                seeds = self.settings.RANDOM_SEEDS[:1]
 
             for seed in seeds:
                 disp_res = res.disp_res[(n_clusters, seed)]
@@ -115,13 +111,13 @@ class ShearProfilePlot(Analyser):
                                          norm, seed, res, disp_res, loc=loc)
 
                 if loc == 'tropics':
-                    if fs.PLOT_EGU_FIGS:
+                    if self.settings.PLOT_EGU_FIGS:
                         plot_pca_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                         plot_pca_red(self.u, use_pca, print_filt, norm, seed, res, disp_res)
                     plotter.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                     plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                     plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
-                    if n_clusters == fs.DETAILED_CLUSTER:
+                    if n_clusters == self.settings.DETAILED_CLUSTER:
                         plotter.plot_profiles_geog_loc(use_pca, print_filt,
                                                        norm, seed, res, disp_res)
                         plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
