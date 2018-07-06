@@ -1,7 +1,7 @@
 from omnium.analyser_setting import AnalyserSetting
-import cosar
 
-production_settings = AnalyserSetting(cosar, dict(
+
+production_settings = AnalyserSetting(dict(
     TROPICS_SLICE = slice(48, 97),
     NH_TROPICS_SLICE = slice(73, 97),
     SH_TROPICS_SLICE = slice(48, 72),
@@ -24,7 +24,7 @@ production_settings = AnalyserSetting(cosar, dict(
     LOC='tropics',
 ))
 
-test_settings = AnalyserSetting(cosar, dict(
+test_settings = AnalyserSetting(dict(
     TROPICS_SLICE = slice(48, 97),
     NH_TROPICS_SLICE = slice(73, 97),
     SH_TROPICS_SLICE = slice(48, 72),

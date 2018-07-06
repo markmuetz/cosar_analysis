@@ -29,7 +29,7 @@ class ShearProfileKmeansCluster(Analyser):
     input_dir = 'omnium_output/{version_dir}/{expt}'
     input_filenames = ['{input_dir}/profiles_pca.hdf', '{input_dir}/pca_n_pca_components.pkl']
     output_dir = 'omnium_output/{version_dir}/{expt}'
-    output_filenames = ['{output_dir}/settings.json', '{output_dir}/res.pkl']
+    output_filenames = ['{output_dir}/res.pkl']
 
     def load(self):
         logger.debug('override load')
@@ -70,8 +70,5 @@ class ShearProfileKmeansCluster(Analyser):
 
     def save(self, state=None, suite=None):
         dirname = os.path.dirname(self.task.output_filenames[0])
-        settings_path = os.path.join(dirname, 'settings.json')
         res_pickle_path = os.path.join(dirname, 'res.pkl')
-
-        self.settings.save(settings_path)
         pickle.dump(self.res, open(res_pickle_path, 'wb'))
