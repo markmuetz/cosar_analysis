@@ -270,6 +270,143 @@ class ShearPlotter:
 
         plt.close("all")
 
+    def plot_profiles_seasonal_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
+        if res.max_mag is not None:
+            # De-normalize data.
+            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
+            rot = np.arctan2(norm_v, norm_u)
+            all_u = mag * np.cos(rot)
+            all_v = mag * np.sin(rot)
+        else:
+            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+
+        for season_name, season in [('son', self.analysis.son)]:
+            n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+
+            clusters_to_disp = list(range(n_clusters))
+            # clusters_to_disp = [3, 5, 8]
+
+            abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
+            abs_max = 20
+
+            fig = plt.figure(figsize=(7, 11))
+            fig.subplots_adjust(bottom=0.15)
+            gs = gridspec.GridSpec(len(clusters_to_disp), 5, width_ratios=[1, 1, 1, 1, 0.4])
+            cmap = 'Reds'
+            axes1 = []
+            axes2 = []
+            for ax_index, i in enumerate(clusters_to_disp):
+                axes1.append(plt.subplot(gs[ax_index, 0]))
+                axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
+            colorbar_ax = fig.add_axes([0.9, 0.1, 0.02, 0.8])
+
+            title_fmt = 'SEASON_PROFILES_GEOG_LOC_{}_{}_{}_{}_{}_-{}_nclust-{}'
+            title = title_fmt.format(season_name, use_pca, filt, norm, seed, n_pca_components, n_clusters)
+
+            r = [[-30, 30], [0, 360]]
+            hists_latlon = []
+            for ax_index, cluster_index in enumerate(clusters_to_disp):
+                # TODO: Not working yet!
+                raise Exception('Unknown problem with analysis')
+                keep = kmeans_red.labels_ == cluster_index & season
+                # Get original samples based on how they've been classified.
+                lat = res.X_latlon[0]
+                lon = res.X_latlon[1]
+                cluster_lat = lat[keep]
+                cluster_lon = lon[keep]
+
+                bins = (49, 192)
+                hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
+                hists_latlon.append((hist, lat, lon))
+
+            hist_max = np.max([h[0].max() for h in hists_latlon])
+            hist_min = np.min([h[0].min() for h in hists_latlon])
+            hist_max = 200
+
+            xy_pos_map = { }
+
+            for ax_index, cluster_index in enumerate(clusters_to_disp):
+                keep = kmeans_red.labels_ == cluster_index
+
+                ax1 = axes1[ax_index]
+                ax2 = axes2[ax_index]
+
+                u = all_u[keep]
+                v = all_v[keep]
+
+                u_p25, u_median, u_p75 = np.percentile(u, (25, 50, 75), axis=0)
+                v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
+
+                ax1.plot(u_median, v_median, 'k-')
+
+                ax1.text(0.05, 0.01, 'C{}'.format(cluster_index + 1),
+                         verticalalignment='bottom', horizontalalignment='left',
+                         transform=ax1.transAxes,
+                         color='black', fontsize=15)
+
+                for i in range(len(u_median)):
+                    u = u_median[i]
+                    v = v_median[i]
+                    # ax1.plot(u, v, 'k+')
+
+                    if cluster_index in xy_pos_map:
+                        xy_pos = xy_pos_map[cluster_index][i]
+                    else:
+                        xy_pos = (-2, 2)
+
+                    if i == 0 or i == len(u_median) -1:
+                        ax1.annotate('{}'.format(self.settings.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=xy_pos,
+                                     textcoords='offset points')
+                ax1.set_xlim((-10, 25))
+                ax1.set_ylim((-6, 6))
+                if ax_index == len(clusters_to_disp) // 2:
+                    ax1.set_ylabel('v (m s$^{-1}$)')
+
+                ax2.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+                ax2.yaxis.tick_right()
+
+                lon_formatter = LongitudeFormatter(zero_direction_label=True)
+                lat_formatter = LatitudeFormatter()
+                ax2.xaxis.set_major_formatter(lon_formatter)
+                ax2.yaxis.set_major_formatter(lat_formatter)
+                if ax_index != len(clusters_to_disp) - 1:
+                    ax1.get_xaxis().set_ticklabels([])
+                else:
+                    ax1.set_xlabel('u (m s$^{-1}$)')
+                    ax2.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
+
+                # Get original samples based on how they've been classified.
+
+                # cmap = 'autumn'
+                # cmap = 'YlOrRd'
+                ax2.set_extent((-180, 179, -30, 30))
+                # ax.set_global()
+                hist, lat, lon = hists_latlon[ax_index]
+
+                # ax.imshow(hist, origin='upper', extent=extent,
+                # transform=ccrs.PlateCarree(), cmap=cmap)
+
+                # Ignores all 0s.
+                # masked_hist = np.ma.masked_array(hist, hist == 0)
+                masked_hist = hist
+                # Works better than imshow.
+                # img = ax2.pcolormesh(lon, lat, masked_hist, vmin=0, vmax=hist_max,
+                img = ax2.pcolormesh(lon, lat, masked_hist, vmax=hist_max,
+                                     transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
+                ax2.coastlines()
+
+            cbar = fig.colorbar(img, cax=colorbar_ax, # ticks=[0, hist_max],
+                                cmap=cmap)
+            cbar.set_clim(1, hist_max)
+
+            # plt.tight_layout()
+            plt.savefig(self.save_path(title) + '.png')
+
+            plt.close("all")
+
     def plot_all_profiles(self, use_pca, filt, norm, seed, res, disp_res):
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res

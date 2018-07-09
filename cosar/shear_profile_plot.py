@@ -60,10 +60,25 @@ class ShearProfilePlot(Analyser):
         df_filt['doy'] = doy
 
         # Rem zero based! i.e. 5 == june.
-        jja = ((df_filt['month'].values == 5) | (df_filt['month'].values == 6) | (df_filt['month'].values == 7))
-        son = ((df_filt['month'].values == 8) | (df_filt['month'].values == 9) | (df_filt['month'].values == 10))
-        djf = ((df_filt['month'].values == 11) | (df_filt['month'].values == 0) | (df_filt['month'].values == 1))
-        mam = ((df_filt['month'].values == 2) | (df_filt['month'].values == 3) | (df_filt['month'].values == 4))
+        self.jja = ((df_filt['month'].values == 5) |
+                    (df_filt['month'].values == 6) |
+                    (df_filt['month'].values == 7))
+        self.son = ((df_filt['month'].values == 8) |
+                    (df_filt['month'].values == 9) |
+                    (df_filt['month'].values == 10))
+        self.djf = ((df_filt['month'].values == 11) |
+                    (df_filt['month'].values == 0) |
+                    (df_filt['month'].values == 1))
+        self.mam = ((df_filt['month'].values == 2) |
+                    (df_filt['month'].values == 3) |
+                    (df_filt['month'].values == 4))
+
+        self.df_filt_jja = df_filt[self.jja]
+        self.df_filt_son = df_filt[self.son]
+        self.df_filt_djf = df_filt[self.djf]
+        self.df_filt_mam = df_filt[self.mam]
+
+        assert len(df_filt) == self.jja.sum() + self.son.sum() + self.djf.sum() + self.mam.sum()
 
     def save(self, state=None, suite=None):
         with open(self.task.output_filenames[0], 'w') as f:
@@ -120,6 +135,8 @@ class ShearProfilePlot(Analyser):
                     if n_clusters == self.settings.DETAILED_CLUSTER:
                         plotter.plot_profiles_geog_loc(use_pca, print_filt,
                                                        norm, seed, res, disp_res)
+                        plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
+                                                                norm, seed, res, disp_res)
                         plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                     if use_pca:
                         # plotter.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
