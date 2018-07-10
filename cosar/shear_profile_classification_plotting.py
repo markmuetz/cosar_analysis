@@ -283,7 +283,11 @@ class ShearPlotter:
             all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
             all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
-        for season_name, season in [('son', self.analysis.son)]:
+        for season_name, season in [('son', self.analysis.son),
+                                    ('djf', self.analysis.djf),
+                                    ('mam', self.analysis.mam),
+                                    ('jja', self.analysis.jja)]:
+            logger.debug('running geog loc for {}', season_name)
             n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
             clusters_to_disp = list(range(n_clusters))
@@ -307,11 +311,13 @@ class ShearPlotter:
             title = title_fmt.format(season_name, use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
             r = [[-30, 30], [0, 360]]
+            no_data = False
             hists_latlon = []
             for ax_index, cluster_index in enumerate(clusters_to_disp):
-                # TODO: Not working yet!
-                raise Exception('Unknown problem with analysis')
-                keep = kmeans_red.labels_ == cluster_index & season
+                keep = (kmeans_red.labels_ == cluster_index) & season
+                if not keep.sum():
+                    no_data = True
+                    break
                 # Get original samples based on how they've been classified.
                 lat = res.X_latlon[0]
                 lon = res.X_latlon[1]
@@ -322,9 +328,12 @@ class ShearPlotter:
                 hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
                 hists_latlon.append((hist, lat, lon))
 
+            if no_data:
+                logger.debug('Not enough data for {}', season_name)
+                continue
+
             hist_max = np.max([h[0].max() for h in hists_latlon])
             hist_min = np.min([h[0].min() for h in hists_latlon])
-            hist_max = 200
 
             xy_pos_map = { }
 
@@ -385,6 +394,9 @@ class ShearPlotter:
                 ax2.set_extent((-180, 179, -30, 30))
                 # ax.set_global()
                 hist, lat, lon = hists_latlon[ax_index]
+
+                if len(hist) == 1:
+                    continue
 
                 # ax.imshow(hist, origin='upper', extent=extent,
                 # transform=ccrs.PlateCarree(), cmap=cmap)
