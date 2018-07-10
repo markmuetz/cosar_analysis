@@ -68,9 +68,13 @@ def _filter(settings, u, v, w, cape,
         logger.debug('preprocess_shear')
         max_shear = []
 
+        min_time, max_time = u_red.coord('time').points[[0, -1]]
+
         # Preprocess max_shear.
         for u_slice, v_slice in zip(u_red_iter, v_red_iter):
-            logger.debug(u_slice.coord('time').points[0])
+            time = u_slice.coord('time').points[0]
+            logger.debug('Time: {} ({:6.2f} %)',
+                         time, 100 * (time - min_time) / (max_time - min_time))
             shear = _calc_shear(u_slice, v_slice, dp)
             # Take max along pressure-axis.
             # Up to a given pressure level.
