@@ -1,7 +1,7 @@
-from omnium import AnalyserSetting
+from omnium import AnalysisSettings
 
 
-production_settings = AnalyserSetting(dict(
+production_settings = AnalysisSettings(dict(
     TROPICS_SLICE = slice(48, 97),
     NH_TROPICS_SLICE = slice(73, 97),
     SH_TROPICS_SLICE = slice(48, 72),
@@ -24,7 +24,7 @@ production_settings = AnalyserSetting(dict(
     LOC='tropics',
 ))
 
-test_settings = AnalyserSetting(dict(
+test_settings = AnalysisSettings(dict(
     TROPICS_SLICE = slice(48, 97),
     NH_TROPICS_SLICE = slice(73, 97),
     SH_TROPICS_SLICE = slice(48, 72),
