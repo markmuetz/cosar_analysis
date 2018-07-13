@@ -30,7 +30,7 @@ def test_00_check_all_analysers_in_use():
             assert enabled_str == 'True'
             analysis_name = ordered_analysis[3:]
             analysis_names.append(analysis_name)
-    cosar_analysis_names = [a.analysis_name for a in cosar.analysis_classes]
+    cosar_analysis_names = [a.analysis_name for a in cosar.analyser_classes]
     assert set(analysis_names) == set(cosar_analysis_names)
 
 
