@@ -1,4 +1,4 @@
-from omnium.analyser_setting import AnalyserSetting
+from omnium import AnalyserSetting
 
 
 production_settings = AnalyserSetting(dict(

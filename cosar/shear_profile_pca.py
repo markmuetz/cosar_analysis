@@ -3,8 +3,9 @@ import pickle
 from logging import getLogger
 
 import pandas as pd
-from omnium.analyser import Analyser
 from sklearn.decomposition import PCA
+
+from omnium import Analyser
 
 logger = getLogger('cosar.spp')
 

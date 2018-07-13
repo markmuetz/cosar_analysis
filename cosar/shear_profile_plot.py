@@ -5,7 +5,7 @@ from logging import getLogger
 
 import iris
 import pandas as pd
-from omnium.analyser import Analyser
+from omnium import Analyser
 from omnium.utils import get_cube
 
 from cosar._old_code.egu_poster_figs import (plot_pca_cluster_results,
