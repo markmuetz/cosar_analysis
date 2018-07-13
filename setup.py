@@ -29,7 +29,7 @@ setup(
     scripts=[ ],
     python_requires='>=3.6',
     install_requires=[
-        'omnium',
+        'omnium>=0.10.2',
         'iris',
         'matplotlib',
         'numpy',
