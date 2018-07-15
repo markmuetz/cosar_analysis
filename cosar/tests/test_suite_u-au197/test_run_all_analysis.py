@@ -2,8 +2,9 @@ import os
 import shutil
 from configparser import ConfigParser
 
-import omnium
 import cosar
+
+import omnium
 
 
 def setup_module():

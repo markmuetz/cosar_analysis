@@ -1,8 +1,8 @@
+import cosar
 from mock import Mock, patch
 
 import omnium
 from omnium.setup_logging import setup_logger
-import cosar
 
 
 def test_omnium_version():

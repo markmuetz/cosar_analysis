@@ -2,6 +2,7 @@ from logging import getLogger
 
 import numpy as np
 import pandas as pd
+
 from omnium import Analyser
 from omnium.utils import get_cube
 

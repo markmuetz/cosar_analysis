@@ -5,12 +5,12 @@ from logging import getLogger
 
 import iris
 import pandas as pd
-from omnium import Analyser
-from omnium.utils import get_cube
-
 from cosar.egu_poster_figs import (plot_pca_cluster_results,
                                    plot_pca_red, plot_gcm_for_schematic)
 from cosar.shear_profile_classification_plotting import ShearPlotter
+
+from omnium import Analyser
+from omnium.utils import get_cube
 
 logger = getLogger('cosar.spplt')
 

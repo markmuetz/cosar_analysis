@@ -4,8 +4,9 @@ from logging import getLogger
 
 import numpy as np
 import pandas as pd
-from omnium import Analyser
 from sklearn.cluster import KMeans
+
+from omnium import Analyser
 
 logger = getLogger('cosar.spkc')
 

@@ -1,14 +1,14 @@
-import os
-import random
 import hashlib
 import logging
+import os
+import random
 
+import iris
 import numpy as np
 import pylab as plt
 from matplotlib import colors
-from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-import iris
+from sklearn.decomposition import PCA
 
 logger = logging.getLogger('claprof')
 logger.setLevel(logging.DEBUG)

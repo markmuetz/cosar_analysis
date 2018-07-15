@@ -4,15 +4,15 @@ import pickle
 from logging import getLogger
 
 import numpy as np
-from omnium.analyser import Analyser
-from omnium.analyser_setting import AnalyserSetting
-from omnium.utils import get_cube
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-
 from cosar._old_code.egu_poster_figs import (plot_filtered_sample, plot_pca_cluster_results,
                                              plot_pca_red, plot_gcm_for_schematic)
 from cosar.shear_profile_classification_plotting import ShearPlotter
+from omnium.analyser import Analyser
+from omnium.analyser_setting import AnalyserSetting
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+
+from omnium.utils import get_cube
 
 logger = getLogger('cosar.spca')
 

@@ -1,11 +1,10 @@
 import itertools
 
+import cartopy.crs as ccrs
+import iris
+import matplotlib.ticker as mticker
 import numpy as np
 import pylab as plt
-
-import iris
-import cartopy.crs as ccrs
-import matplotlib.ticker as mticker
 
 from omnium.utils import get_cube
 
