@@ -8,8 +8,8 @@ import pandas as pd
 from omnium import Analyser
 from omnium.utils import get_cube
 
-from cosar._old_code.egu_poster_figs import (plot_pca_cluster_results,
-                                             plot_pca_red, plot_gcm_for_schematic)
+from cosar.egu_poster_figs import (plot_pca_cluster_results,
+                                   plot_pca_red, plot_gcm_for_schematic)
 from cosar.shear_profile_classification_plotting import ShearPlotter
 
 logger = getLogger('cosar.spplt')
