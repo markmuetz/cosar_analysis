@@ -9,7 +9,7 @@ logger = getLogger('cosar.spn')
 
 
 def _normalize_feature_matrix(settings, X_filtered):
-    """Perfrom normalization based on norm. Only options are norm=mag,magrot"""
+    """Perform normalization based on norm."""
     logger.debug('normalizing data')
     mag = np.sqrt(X_filtered[:, :settings.NUM_PRESSURE_LEVELS] ** 2 +
                   X_filtered[:, settings.NUM_PRESSURE_LEVELS:] ** 2)
@@ -42,7 +42,7 @@ def _normalize_feature_matrix(settings, X_filtered):
     # Add the two matrices together to get feature set.
     X_magrot = np.concatenate((Xu_magrot, Xv_magrot), axis=1)
 
-    return X_mag, X_magrot, max_mag
+    return X_mag, X_magrot, max_mag, rot_at_level
 
 
 class ShearProfileNormalize(Analyser):
@@ -64,7 +64,8 @@ class ShearProfileNormalize(Analyser):
         X_filtered = df.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
         if self.norm is not None:
-            X_mag, X_magrot, max_mag = _normalize_feature_matrix(self.settings, X_filtered)
+            X_mag, X_magrot, max_mag, rot_at_level = _normalize_feature_matrix(self.settings,
+                                                                               X_filtered)
             if self.norm == 'mag':
                 X = X_mag
             elif self.norm == 'magrot':
@@ -73,6 +74,7 @@ class ShearProfileNormalize(Analyser):
         self.norm_df = pd.DataFrame(index=self.df.index, data=X)
         self.norm_df['lat'] = self.df['lat']
         self.norm_df['lon'] = self.df['lon']
+        self.norm_df['rot_at_level'] = rot_at_level
         self.max_mag_df = pd.DataFrame(data=max_mag)
 
     def save(self, state=None, suite=None):
