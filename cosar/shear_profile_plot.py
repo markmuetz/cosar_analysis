@@ -35,7 +35,7 @@ class ShearProfilePlot(Analyser):
         logger.debug('override load')
         dirname = os.path.dirname(self.task.filenames[0])
         self.df_filtered = pd.read_hdf(self.task.filenames[0])
-        df_normalized = pd.read_hdf(self.task.filenames[1], 'normalized_profile')
+        self.df_normalized = pd.read_hdf(self.task.filenames[1], 'normalized_profile')
         df_max_mag = pd.read_hdf(self.task.filenames[1], 'max_mag')
         df_pca = pd.read_hdf(self.task.filenames[2])
         self.res = pickle.load(open(self.task.filenames[3], 'rb'))
@@ -46,7 +46,7 @@ class ShearProfilePlot(Analyser):
         self.res.n_pca_components = n_pca_components
         # self.res.X = pd.read_hdf('profiles_pca.hdf')
         self.res.orig_X = self.df_filtered.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
-        self.res.X = df_normalized.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
+        self.res.X = self.df_normalized.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.res.X_pca = df_pca.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.res.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
         self.u = get_cube(self.cubes, 30, 201)
@@ -129,12 +129,14 @@ class ShearProfilePlot(Analyser):
                     if self.settings.PLOT_EGU_FIGS:
                         plot_pca_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                         plot_pca_red(self.u, use_pca, print_filt, norm, seed, res, disp_res)
-                    plotter.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
-                    plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
-                    plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                    # plotter.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
+                    # plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
+                    # plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if n_clusters == self.settings.DETAILED_CLUSTER:
                         plotter.plot_profiles_geog_loc(use_pca, print_filt,
                                                        norm, seed, res, disp_res)
+                        plotter.plot_wind_rose_hists(use_pca, print_filt,
+                                                     norm, seed, res, disp_res)
                         plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
                                                                 norm, seed, res, disp_res)
                         plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)

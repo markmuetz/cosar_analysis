@@ -575,6 +575,30 @@ class ShearPlotter:
         plt.savefig(self.save_path(title) + '.png')
         plt.close("all")
 
+    def plot_wind_rose_hists(self, use_pca, filt, norm, seed, res, disp_res):
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        rot_at_level = self.analysis.df_normalized['rot_at_level']
+
+        for cluster_index in range(n_clusters):
+            title_fmt = 'WIND_ROSE_HIST_{}_{}_{}_{}_{}_-{}_nclust-{}'
+            title = title_fmt.format(cluster_index, use_pca, filt, norm, seed, n_pca_components, n_clusters)
+            keep = kmeans_red.labels_ == cluster_index
+            fig = plt.figure(figsize=(8, 8))
+            ax = fig.add_axes([.1, .1, .8, .8], polar=True)
+            ax.set_theta_direction(-1)
+            ax.set_theta_zero_location('N')
+            ax.set_xticklabels(['N', 'NW', 'W', 'SW', 'S', 'SE', 'E', 'NE'])
+
+            bins = np.linspace(-np.pi, np.pi, 9)
+            hist = np.histogram(rot_at_level[keep], bins=bins)
+
+            bin_centres = (bins[:-1] + bins[1:]) / 2
+            #ax.bar(15 * np.pi/8, 10,  np.pi / 4, color='blue')
+            for val, ang in zip(hist[0], bin_centres):
+                ax.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
+            plt.savefig(self.save_path(title) + '.png')
+
+
     def plot_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
