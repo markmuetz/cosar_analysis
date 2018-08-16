@@ -596,6 +596,7 @@ class ShearPlotter:
             #ax.bar(15 * np.pi/8, 10,  np.pi / 4, color='blue')
             for val, ang in zip(hist[0], bin_centres):
                 ax.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
+            plt.title('C{}'.format(cluster_index + 1))
             plt.savefig(self.save_path(title) + '.png')
 
 

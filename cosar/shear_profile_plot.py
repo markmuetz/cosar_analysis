@@ -129,9 +129,9 @@ class ShearProfilePlot(Analyser):
                     if self.settings.PLOT_EGU_FIGS:
                         plot_pca_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                         plot_pca_red(self.u, use_pca, print_filt, norm, seed, res, disp_res)
-                    # plotter.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
-                    # plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
-                    # plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                    plotter.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
+                    plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
+                    plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if n_clusters == self.settings.DETAILED_CLUSTER:
                         plotter.plot_profiles_geog_loc(use_pca, print_filt,
                                                        norm, seed, res, disp_res)
