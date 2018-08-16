@@ -156,32 +156,71 @@ class ShearPlotter:
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
 
+        cmap = 'Reds'
+        r = [[-30, 30], [0, 360]]
+
+        hists_latlon = []
+        all_lat = res.X_latlon[0]
+        all_lon = res.X_latlon[1]
+
+        ax = plt.axes(projection=ccrs.PlateCarree())
+        ax.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+        ax.yaxis.tick_right()
+
+        lon_formatter = LongitudeFormatter(zero_direction_label=True)
+        lat_formatter = LatitudeFormatter()
+        ax.xaxis.set_major_formatter(lon_formatter)
+        ax.yaxis.set_major_formatter(lat_formatter)
+        ax.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
+
+        # Get original samples based on how they've been classified.
+
+        # cmap = 'autumn'
+        # cmap = 'YlOrRd'
+        ax.set_extent((-180, 179, -30, 30))
+        # ax.set_global()
+        # ax.imshow(hist, origin='upper', extent=extent,
+        # transform=ccrs.PlateCarree(), cmap=cmap)
+
+        # Ignores all 0s.
+        # masked_hist = np.ma.masked_array(hist, hist == 0)
+        # Works better than imshow.
+        # img = ax2.pcolormesh(lon, lat, masked_hist, vmin=0, vmax=hist_max,
+        bins = (49, 192)
+        hist, lat, lon = np.histogram2d(all_lat, all_lon, bins=bins, range=r)
+        img = ax.pcolormesh(lon, lat, hist, vmax=200,
+                            transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
+        ax.coastlines()
+
+        title_fmt = 'PROFILES_GEOG_ALL_{}_{}_{}_{}_-{}_nclust-{}'
+        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
+
+        # TODO: add in.
+        # cbar = plt.colorbar(img, cax=colorbar_ax, # ticks=[0, hist_max],
+                            # cmap=cmap)
+        # cbar.set_clim(1, 200)
+
+        plt.savefig(self.save_path(title) + '.png')
+
+        title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
+        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
+
         fig = plt.figure(figsize=(7, 11))
         fig.subplots_adjust(bottom=0.15)
         gs = gridspec.GridSpec(len(clusters_to_disp), 5, width_ratios=[1, 1, 1, 1, 0.4])
-        cmap = 'Reds'
+        colorbar_ax = fig.add_axes([0.9, 0.1, 0.02, 0.8])
         axes1 = []
         axes2 = []
         for ax_index, i in enumerate(clusters_to_disp):
             axes1.append(plt.subplot(gs[ax_index, 0]))
             axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
-        colorbar_ax = fig.add_axes([0.9, 0.1, 0.02, 0.8])
 
-        title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
-        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
-
-        r = [[-30, 30], [0, 360]]
-
-        hists_latlon = []
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = kmeans_red.labels_ == cluster_index
             # Get original samples based on how they've been classified.
-            lat = res.X_latlon[0]
-            lon = res.X_latlon[1]
-            cluster_lat = lat[keep]
-            cluster_lon = lon[keep]
+            cluster_lat = all_lat[keep]
+            cluster_lon = all_lon[keep]
 
-            bins = (49, 192)
             hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
             hists_latlon.append((hist, lat, lon))
 
@@ -603,27 +642,26 @@ class ShearPlotter:
     def plot_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        # cmap = 'hot'
+        cmap = 'autumn'
+        # cmap = 'YlOrRd'
+        bins = (49, 192)
+        r = [[-30, 30], [0, 360]]
 
+        all_lat = res.X_latlon[0]
+        all_lon = res.X_latlon[1]
         for cluster_index in range(n_clusters):
             keep = kmeans_red.labels_ == cluster_index
 
             # Get original samples based on how they've been classified.
-            lat = res.X_latlon[0]
-            lon = res.X_latlon[1]
-            cluster_lat = lat[keep]
-            cluster_lon = lon[keep]
+            cluster_lat = all_lat[keep]
+            cluster_lon = all_lon[keep]
 
             title_fmt = 'GLOB_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
                                      cluster_index, keep.sum())
             plt.figure(title)
             plt.clf()
-
-            # cmap = 'hot'
-            cmap = 'autumn'
-            # cmap = 'YlOrRd'
-            bins = (49, 192)
-            r = [[-30, 30], [0, 360]]
 
             ax = plt.axes(projection=ccrs.PlateCarree())
             ax.set_title(title)
