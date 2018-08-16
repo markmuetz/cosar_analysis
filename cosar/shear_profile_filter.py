@@ -63,18 +63,17 @@ def _filter(settings, u, v, w, cape,
     # So to filter out the and get the lower troposphere you do e.g. shear_pressure[thresh:]
     logger.info('Use pressures: {}'.format(shear_pressure[shear_pressure_thresh_index:]))
 
+    min_time, max_time = u_red.coord('time').points[[0, -1]]
     # Need to find the max shears for each profile in advance.
     # This is because this filter is based on finding e.g. the 75th percentile.
     if 'shear' in filter_on:
         logger.debug('preprocess_shear')
         max_shear = []
 
-        min_time, max_time = u_red.coord('time').points[[0, -1]]
-
         # Preprocess max_shear.
         for u_slice, v_slice in zip(u_red_iter, v_red_iter):
             time = u_slice.coord('time').points[0]
-            logger.debug('Time: {} ({:6.2f} %)',
+            logger.debug('(pre-proc) Time: {} ({:6.2f} %)',
                          time, 100 * (time - min_time) / (max_time - min_time))
             shear = _calc_shear(u_slice, v_slice, dp)
             # Take max along pressure-axis.
@@ -98,7 +97,9 @@ def _filter(settings, u, v, w, cape,
     dates = []
     # Apply filters.
     for u_slice, v_slice, cape_slice in zip(u_red_iter, v_red_iter, cape_red_iter):
-        logger.debug(u_slice.coord('time').points[0])
+        time = u_slice.coord('time').points[0]
+        logger.debug('(filter) Time: {} ({:6.2f} %)',
+                     time, 100 * (time - min_time) / (max_time - min_time))
         # orig cubes have dims ['pressure', 'latitude', 'longitude']
         # transposed cubes have dims ['latitude', 'longitude', 'pressure']
         # u_samples has shape (len(latitude) * len(lognitude), len(pressure)).
