@@ -13,6 +13,10 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 logger = getLogger('cosar.spca')
 
 
+def dist_from_rwp(u_rwp, v_rwp, u, v):
+    return np.sum(np.sqrt((u - u_rwp[None, :])**2 + (v - v_rwp[None, :])**2), axis=1)
+
+
 class ShearPlotter:
     def __init__(self, analysis, settings):
         self.analysis = analysis
@@ -42,7 +46,9 @@ class ShearPlotter:
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
         if res.max_mag is not None:
-            # De-normalize data.
+            # De-normalize data. N.B. this takes into account any changes made by
+            # settings.FAVOUR_LOWER_TROP, as it uses res.max_mag to do de-norm, which is what's modified
+            # in the first place.
             norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
             norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
             mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
@@ -478,7 +484,7 @@ class ShearPlotter:
 
         # Why no sharex? Because it's difficult to draw on the label ticks on axis
         # [3, 1], the one with the hidden axis below it.
-        fig, axes = plt.subplots(3, 4, sharey=True)
+        fig, axes = plt.subplots(2, 5, sharey=True, figsize=(10, 8))
 
         for cluster_index in range(n_clusters):
             ax = axes.flatten()[cluster_index]
@@ -492,46 +498,52 @@ class ShearPlotter:
             u_max = u.max(axis=0)
             u_mean = u.mean(axis=0)
             u_std = u.std(axis=0)
-            u_p25, u_median, u_p75 = np.percentile(u, (25, 50, 75), axis=0)
+            u_p10, u_p25, u_median, u_p75, u_p90 = np.percentile(u, (10, 25, 50, 75, 90), axis=0)
+            # u_p25, u_median, u_p75 = np.percentile(u, (25, 50, 75), axis=0)
 
             v_min = v.min(axis=0)
             v_max = v.max(axis=0)
             v_mean = v.mean(axis=0)
             v_std = v.std(axis=0)
-            v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
+            v_p10, v_p25, v_median, v_p75, v_p90 = np.percentile(v, (10, 25, 50, 75, 90), axis=0)
 
             # ax.set_title(cluster_index)
-            ax.set_yticks([1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 50])
+            ax.set_yticks([1000, 800, 600, 400, 200, 50])
 
-            ax.plot(u_p25, pressure, 'b:')
-            ax.plot(u_p75, pressure, 'b:')
+            ax.plot(u_p10, pressure, 'b:')
+            ax.plot(u_p90, pressure, 'b:')
+            # ax.plot(u_p25, pressure, 'b--')
+            # ax.plot(u_p75, pressure, 'b--')
             # ax.plot(u_mean - u_std, pressure, 'b--')
             # ax.plot(u_mean + u_std, pressure, 'b--')
             ax.plot(u_median, pressure, 'b-', label='u')
 
-            ax.plot(v_p25, pressure, 'r:')
-            ax.plot(v_p75, pressure, 'r:')
+            ax.plot(v_p10, pressure, 'r:')
+            ax.plot(v_p90, pressure, 'r:')
+            # ax.plot(v_p25, pressure, 'r--')
+            # ax.plot(v_p75, pressure, 'r--')
             # ax.plot(v_mean - v_std, pressure, 'r--')
             # ax.plot(v_mean + v_std, pressure, 'r--')
             ax.plot(v_median, pressure, 'r-', label='v')
             # plt.legend(loc='best')
 
-            ax.set_xlim((-10, 35))
+            ax.set_xlim((-25, 25))
             ax.set_ylim((pressure.max(), pressure.min()))
-            ax.set_xticks([-10, 0, 10, 20, 30])
+            ax.set_xticks([-20, 0, 20])
             # ax.set_xlabel('wind speed (m s$^{-1}$)')
             # ax.set_ylabel('pressure (hPa)')
 
-            if cluster_index in [0, 1, 2, 3, 4, 5, 6]:
+            if cluster_index in [0, 1, 2, 3, 4]:
                 plt.setp(ax.get_xticklabels(), visible=False)
 
-            if cluster_index in [9]:
+            if cluster_index in [7]:
                 # This is a hacky way to position a label!
-                ax.set_xlabel('                    wind speed (m s$^{-1}$)')
+                ax.set_xlabel('wind speed (m s$^{-1}$)')
 
-            if cluster_index in [4]:
-                ax.set_ylabel('pressure (hPa)')
-            ax.text(0.95, 0.75, 'C{}'.format(cluster_index + 1),
+            if cluster_index in [5]:
+                # This is a hacky way to position a label!
+                ax.set_ylabel('                                    pressure (hPa)')
+            ax.text(0.25, 0.1, 'C{}'.format(cluster_index + 1),
                     verticalalignment='bottom', horizontalalignment='right',
                     transform=ax.transAxes,
                     color='black', fontsize=15)
@@ -540,7 +552,7 @@ class ShearPlotter:
 
 
         # plt.tight_layout()
-        axes[-1, -1].axis('off')
+        # axes[-1, -1].axis('off')
 
         # Profile u/v plots.
         title_fmt = 'ALL_PROFILES_{}_{}_{}_{}_-{}_nclust-{}'
@@ -813,6 +825,107 @@ class ShearPlotter:
         logger.debug('min_dist: {}, {}'.format(min_dist_index, cc_dist.min()))
 
         cc_dist.dump(np_filename)
+
+    def plot_nearest_furthest_profiles(self, use_pca, filt, norm, seed, res, disp_res):
+        pressure = self.analysis.u.coord('pressure').points
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+
+        # De-normalize data. N.B. this takes into account any changes made by
+        # settings.FAVOUR_LOWER_TROP, as it uses res.max_mag to do de-norm, which is what's modified
+        # in the first place.
+        norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+        norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+        mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
+        rot = np.arctan2(norm_v, norm_u)
+        all_u = mag * np.cos(rot)
+        all_v = mag * np.sin(rot)
+
+        for cluster_index in range(n_clusters):
+            keep = kmeans_red.labels_ == cluster_index
+
+            u = all_u[keep]
+            v = all_v[keep]
+
+            u_p10, u_p25, u_median, u_p75, u_p90 = np.percentile(u, (10, 25, 50, 75, 90), axis=0)
+            v_p10, v_p25, v_median, v_p75, v_p90 = np.percentile(v, (10, 25, 50, 75, 90), axis=0)
+            dist = dist_from_rwp(u_median, v_median, u, v)
+            u_sorted = u[dist.argsort()]
+            v_sorted = v[dist.argsort()]
+
+            title_fmt = 'NEAREST_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
+                                     cluster_index, keep.sum())
+            plt.figure(title)
+            plt.clf()
+
+            ax = plt.axes()
+            ax.set_title(title)
+
+            # ax.set_title(cluster_index)
+            ax.set_yticks([1000, 800, 600, 400, 200, 50])
+
+            ax.plot(u_median, pressure, 'b-', label='u')
+            ax.plot(v_median, pressure, 'r-', label='v')
+
+            n_to_show = 10
+
+            for i in range(n_to_show):
+                ax.plot(u_sorted[i], pressure, 'b:')
+                ax.plot(v_sorted[i], pressure, 'r:')
+
+            ax.set_xlim((-25, 25))
+            ax.set_ylim((pressure.max(), pressure.min()))
+            ax.set_xticks([-20, 0, 20])
+            plt.savefig(self.save_path(title) + '.png')
+
+            title_fmt = 'FURTHEST_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
+                                     cluster_index, keep.sum())
+            plt.figure(title)
+            plt.clf()
+
+            ax = plt.axes()
+            ax.set_title(title)
+
+            # ax.set_title(cluster_index)
+            ax.set_yticks([1000, 800, 600, 400, 200, 50])
+
+            ax.plot(u_median, pressure, 'b-', label='u')
+            ax.plot(v_median, pressure, 'r-', label='v')
+
+            for i in range(n_to_show):
+                ax.plot(u_sorted[-(i + 1)], pressure, 'b:')
+                ax.plot(v_sorted[-(i + 1)], pressure, 'r:')
+
+            ax.set_xlim((-25, 25))
+            ax.set_ylim((pressure.max(), pressure.min()))
+            ax.set_xticks([-20, 0, 20])
+            plt.savefig(self.save_path(title) + '.png')
+
+            title_fmt = 'MEDIAN_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
+                                     cluster_index, keep.sum())
+            plt.figure(title)
+            plt.clf()
+
+            ax = plt.axes()
+            ax.set_title(title)
+
+            # ax.set_title(cluster_index)
+            ax.set_yticks([1000, 800, 600, 400, 200, 50])
+
+            ax.plot(u_median, pressure, 'b-', label='u')
+            ax.plot(v_median, pressure, 'r-', label='v')
+
+            mid_index = len(u_sorted) // 2
+            for i in range(mid_index - n_to_show // 2, mid_index + n_to_show // 2):
+                ax.plot(u_sorted[i], pressure, 'b:')
+                ax.plot(v_sorted[i], pressure, 'r:')
+
+            ax.set_xlim((-25, 25))
+            ax.set_ylim((pressure.max(), pressure.min()))
+            ax.set_xticks([-20, 0, 20])
+            plt.savefig(self.save_path(title) + '.png')
 
     def display_veering_backing(self):
         u = self.analysis.u

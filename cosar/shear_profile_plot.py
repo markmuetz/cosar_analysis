@@ -120,28 +120,29 @@ class ShearProfilePlot(Analyser):
 
             for seed in seeds:
                 disp_res = res.disp_res[(n_clusters, seed)]
-                plotter.plot_orig_level_hists(use_pca, print_filt,
-                                              norm, seed, res, disp_res, loc=loc)
-                plotter.plot_level_hists(use_pca, print_filt,
-                                         norm, seed, res, disp_res, loc=loc)
+                # plotter.plot_orig_level_hists(use_pca, print_filt,
+                #                               norm, seed, res, disp_res, loc=loc)
+                # plotter.plot_level_hists(use_pca, print_filt,
+                #                          norm, seed, res, disp_res, loc=loc)
 
                 if loc == 'tropics':
                     if self.settings.PLOT_EGU_FIGS:
                         plot_pca_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
                         plot_pca_red(self.u, use_pca, print_filt, norm, seed, res, disp_res)
                     # plotter.plot_cluster_results(use_pca, print_filt, norm, seed, res, disp_res)
-                    plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
-                    plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
+                    # plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
+                    # plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if n_clusters == self.settings.DETAILED_CLUSTER:
-                        plotter.plot_profiles_geog_loc(use_pca, print_filt,
-                                                       norm, seed, res, disp_res)
-                        plotter.plot_wind_rose_hists(use_pca, print_filt,
-                                                     norm, seed, res, disp_res)
-                        plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
-                                                                norm, seed, res, disp_res)
+                        # plotter.plot_profiles_geog_loc(use_pca, print_filt,
+                        #                                norm, seed, res, disp_res)
+                        # plotter.plot_wind_rose_hists(use_pca, print_filt,
+                        #                              norm, seed, res, disp_res)
+                        # plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
+                        #                                         norm, seed, res, disp_res)
                         plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
+                        plotter.plot_nearest_furthest_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                     if use_pca:
                         # plotter.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
                         pass
-                    plotter.display_cluster_cluster_dist(use_pca, print_filt,
-                                                         norm, seed, res, disp_res)
+                    # plotter.display_cluster_cluster_dist(use_pca, print_filt,
+                    #                                      norm, seed, res, disp_res)

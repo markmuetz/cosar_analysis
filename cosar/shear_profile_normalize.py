@@ -18,6 +18,8 @@ def _normalize_feature_matrix(settings, X_filtered):
     # Normalize the profiles by the maximum magnitude at each level.
     max_mag = mag.max(axis=0)
     if settings.FAVOUR_LOWER_TROP:
+        # This is done by modifying max_mag, which means it's easy to undo by performing
+        # reverse using max_mag.
         max_mag[:settings.NUM_PRESSURE_LEVELS // 2] *= 4
     logger.debug('max_mag = {}'.format(max_mag))
     norm_mag = mag / max_mag[None, :]
