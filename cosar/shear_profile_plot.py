@@ -103,7 +103,7 @@ class ShearProfilePlot(Analyser):
             plotter.plot_scores(use_pca, print_filt, norm, res)
 
         if use_pca and loc == 'tropics':
-            plotter.plot_four_pca_profiles(use_pca, print_filt, norm, res)
+            plotter.plot_seven_pca_profiles(use_pca, print_filt, norm, res)
             # self.plot_pca_profiles(use_pca, print_filt, norm, res)
 
         for n_clusters in self.settings.CLUSTERS:

@@ -757,6 +757,38 @@ class ShearPlotter:
 
         plt.close("all")
 
+    def plot_seven_pca_profiles(self, use_pca, filt, norm, res):
+        pressure = self.analysis.u.coord('pressure').points
+
+        fig, axes = plt.subplots(1, 7, sharey=True, figsize=(5, 2))
+        fig.subplots_adjust(bottom=0.25)
+        for pca_index in range(7):
+            ax = axes[pca_index]
+            ax.set_yticks([1000, 800, 600, 400, 200, 50])
+            ax.set_title('PC{}'.format(pca_index + 1))
+            if pca_index == 0:
+                ax.set_ylabel('pressure (hPa)')
+
+            if pca_index == 1:
+                ax.set_xlabel('          PCA magnitude')
+
+            sample = res.pca.components_[pca_index]
+
+            pca_u, pca_v = sample[:self.settings.NUM_PRESSURE_LEVELS], sample[self.settings.NUM_PRESSURE_LEVELS:]
+            ax.plot(pca_u, pressure, 'b-', label="u'")
+            ax.plot(pca_v, pressure, 'r-', label="v'")
+
+            ax.set_xlim((-1, 1))
+            ax.set_ylim((pressure[-1], pressure[0]))
+
+            if pca_index == 3:
+                plt.legend(loc=[0.86, 0.8])
+
+        title_fmt = 'SEVEN_PCA_PROFILES_{}_{}'
+        title = title_fmt.format(use_pca, filt)
+        plt.savefig(self.save_path(title) + '.png')
+        plt.close("all")
+
     def plot_four_pca_profiles(self, use_pca, filt, norm, res):
         pressure = self.analysis.u.coord('pressure').points
 
