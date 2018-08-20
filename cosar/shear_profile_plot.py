@@ -133,12 +133,12 @@ class ShearProfilePlot(Analyser):
                     # plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                     # plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if n_clusters == self.settings.DETAILED_CLUSTER:
-                        # plotter.plot_profiles_geog_loc(use_pca, print_filt,
-                        #                                norm, seed, res, disp_res)
-                        # plotter.plot_wind_rose_hists(use_pca, print_filt,
-                        #                              norm, seed, res, disp_res)
-                        # plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
-                        #                                         norm, seed, res, disp_res)
+                        plotter.plot_profiles_geog_loc(use_pca, print_filt,
+                                                       norm, seed, res, disp_res)
+                        plotter.plot_wind_rose_hists(use_pca, print_filt,
+                                                     norm, seed, res, disp_res)
+                        plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
+                                                                norm, seed, res, disp_res)
                         plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                         plotter.plot_nearest_furthest_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                     if use_pca:
