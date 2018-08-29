@@ -20,7 +20,10 @@ def _normalize_feature_matrix(settings, X_filtered):
     if settings.FAVOUR_LOWER_TROP:
         # This is done by modifying max_mag, which means it's easy to undo by performing
         # reverse using max_mag.
-        max_mag[:settings.NUM_PRESSURE_LEVELS // 2] *= 4
+        # N.B. increasing max_mag will decrease the normalized values.
+        # Because the values are laid out from highest altitude (lowest pressure) to lowest,
+        # this will affect the upper trop.
+        max_mag[:settings.FAVOUR_INDEX] *= settings.FAVOUR_FACTOR
     logger.debug('max_mag = {}'.format(max_mag))
     norm_mag = mag / max_mag[None, :]
     u_norm_mag = norm_mag * np.cos(rot)
