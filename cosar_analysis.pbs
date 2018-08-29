@@ -1,0 +1,25 @@
+#!/bin/bash --login
+#
+#PBS -l select=serial=true:ncpus=1
+#PBS -l walltime=24:00:00
+#PBS -A n02-REVCON
+
+# Simple serial job to run all omnium cosar analysis.
+# Runs with different settings - doing sensitivity analysis.
+
+# Make sure any symbolic links are resolved to absolute path
+export PBS_O_WORKDIR=$(readlink -f $PBS_O_WORKDIR)               
+cd $PBS_O_WORKDIR
+
+export OMNIUM_ANALYSIS_PKGS=cosar
+source /work/n02/n02/mmuetz/.anaconda3_setup.sh
+source activate omnium_env
+
+omnium version
+omnium -D run -t expt --all P5Y_DP20
+omnium -D run -s production_higher_CAPE -t expt --all P5Y_DP20
+omnium -D run -s production_lower_CAPE -t expt --all P5Y_DP20
+omnium -D run -s production_higher_shear -t expt --all P5Y_DP20
+omnium -D run -s production_lower_shear -t expt --all P5Y_DP20
+omnium -D run -s production_higher_favour -t expt --all P5Y_DP20
+omnium -D run -s production_lower_favour -t expt --all P5Y_DP20
