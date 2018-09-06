@@ -10,6 +10,8 @@ import pylab as plt
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
+from omnium.utils import cm_to_inch
+
 logger = getLogger('cosar.spca')
 
 
@@ -140,12 +142,47 @@ class ShearPlotter:
 
         plt.close("all")
 
+    def plot_profiles_geog_all(self, use_pca, filt, norm, seed, res, disp_res):
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+
+        cmap = 'Reds'
+        r = [[-30, 30], [0, 360]]
+
+        all_lat = res.X_latlon[0]
+        all_lon = res.X_latlon[1]
+
+        fig = plt.figure(figsize=cm_to_inch(15, 5))
+        ax = plt.axes(projection=ccrs.PlateCarree())
+        ax.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+        ax.yaxis.tick_right()
+
+        lon_formatter = LongitudeFormatter(zero_direction_label=True)
+        lat_formatter = LatitudeFormatter()
+        ax.xaxis.set_major_formatter(lon_formatter)
+        ax.yaxis.set_major_formatter(lat_formatter)
+        ax.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
+
+        ax.set_extent((-180, 179, -30, 30))
+
+        bins = (49, 192)
+        hist, lat, lon = np.histogram2d(all_lat, all_lon, bins=bins, range=r)
+        img = ax.pcolormesh(lon, lat, hist,
+                            transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
+        ax.coastlines()
+
+        title_fmt = 'PROFILES_GEOG_ALL_{}_{}_{}_{}_-{}_nclust-{}'
+        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
+
+        colorbar_ax = fig.add_axes([0.11, 0.14, 0.8, 0.02])
+        cbar = plt.colorbar(img, cax=colorbar_ax, cmap=cmap, orientation='horizontal')
+        cbar.set_clim(1, hist.max())
+
+        plt.savefig(self.save_path(title) + '.png')
+
     def plot_profiles_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
-        pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
         clusters_to_disp = list(range(n_clusters))
-        # clusters_to_disp = [3, 5, 8]
 
         if res.max_mag is not None:
             # De-normalize data.
@@ -164,62 +201,27 @@ class ShearPlotter:
 
         cmap = 'Reds'
         r = [[-30, 30], [0, 360]]
+        bins = (49, 192)
 
         hists_latlon = []
         all_lat = res.X_latlon[0]
         all_lon = res.X_latlon[1]
 
-        ax = plt.axes(projection=ccrs.PlateCarree())
-        ax.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
-        ax.yaxis.tick_right()
-
-        lon_formatter = LongitudeFormatter(zero_direction_label=True)
-        lat_formatter = LatitudeFormatter()
-        ax.xaxis.set_major_formatter(lon_formatter)
-        ax.yaxis.set_major_formatter(lat_formatter)
-        ax.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
-
-        # Get original samples based on how they've been classified.
-
-        # cmap = 'autumn'
-        # cmap = 'YlOrRd'
-        ax.set_extent((-180, 179, -30, 30))
-        # ax.set_global()
-        # ax.imshow(hist, origin='upper', extent=extent,
-        # transform=ccrs.PlateCarree(), cmap=cmap)
-
-        # Ignores all 0s.
-        # masked_hist = np.ma.masked_array(hist, hist == 0)
-        # Works better than imshow.
-        # img = ax2.pcolormesh(lon, lat, masked_hist, vmin=0, vmax=hist_max,
-        bins = (49, 192)
-        hist, lat, lon = np.histogram2d(all_lat, all_lon, bins=bins, range=r)
-        img = ax.pcolormesh(lon, lat, hist, vmax=200,
-                            transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
-        ax.coastlines()
-
-        title_fmt = 'PROFILES_GEOG_ALL_{}_{}_{}_{}_-{}_nclust-{}'
-        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
-
-        # TODO: add in.
-        # cbar = plt.colorbar(img, cax=colorbar_ax, # ticks=[0, hist_max],
-                            # cmap=cmap)
-        # cbar.set_clim(1, 200)
-
-        plt.savefig(self.save_path(title) + '.png')
-
         title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
-        fig = plt.figure(figsize=(7, 11))
-        fig.subplots_adjust(bottom=0.15)
-        gs = gridspec.GridSpec(len(clusters_to_disp), 5, width_ratios=[1, 1, 1, 1, 0.4])
+        fig = plt.figure(figsize=(cm_to_inch(17, 26)))
+        fig.subplots_adjust(bottom=0.15, hspace=0.01)
+        fig.tight_layout()
+        gs = gridspec.GridSpec(len(clusters_to_disp), 6, width_ratios=[2, 1, 1, 1, 1, 0.4])
         colorbar_ax = fig.add_axes([0.9, 0.1, 0.02, 0.8])
         axes1 = []
         axes2 = []
+        axes3 = []
         for ax_index, i in enumerate(clusters_to_disp):
-            axes1.append(plt.subplot(gs[ax_index, 0]))
-            axes2.append(plt.subplot(gs[ax_index, 1:4], projection=ccrs.PlateCarree()))
+            axes1.append(plt.subplot(gs[ax_index, 0], aspect='equal'))
+            axes2.append(plt.subplot(gs[ax_index, 1], aspect='equal', polar=True))
+            axes3.append(plt.subplot(gs[ax_index, 2:5], projection=ccrs.PlateCarree()))
 
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = kmeans_red.labels_ == cluster_index
@@ -234,12 +236,26 @@ class ShearPlotter:
         hist_min = np.min([h[0].min() for h in hists_latlon])
 
         xy_pos_map = { }
+        rot_at_level = self.analysis.df_normalized['rot_at_level']
 
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = kmeans_red.labels_ == cluster_index
 
             ax1 = axes1[ax_index]
             ax2 = axes2[ax_index]
+            ax3 = axes3[ax_index]
+
+            ax2.set_theta_direction(-1)
+            ax2.set_theta_zero_location('N')
+            ax2.set_xticklabels(['N', 'NW', 'W', 'SW', 'S', 'SE', 'E', 'NE'])
+
+            bins = np.linspace(-np.pi, np.pi, 9)
+            hist = np.histogram(rot_at_level[keep], bins=bins)
+
+            bin_centres = (bins[:-1] + bins[1:]) / 2
+            #ax.bar(15 * np.pi/8, 10,  np.pi / 4, color='blue')
+            for val, ang in zip(hist[0], bin_centres):
+                ax2.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
 
             u = all_u[keep]
             v = all_v[keep]
@@ -272,24 +288,24 @@ class ShearPlotter:
             if ax_index == len(clusters_to_disp) // 2:
                 ax1.set_ylabel('v (m s$^{-1}$)')
 
-            ax2.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
-            ax2.yaxis.tick_right()
+            ax3.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+            ax3.yaxis.tick_right()
 
             lon_formatter = LongitudeFormatter(zero_direction_label=True)
             lat_formatter = LatitudeFormatter()
-            ax2.xaxis.set_major_formatter(lon_formatter)
-            ax2.yaxis.set_major_formatter(lat_formatter)
+            ax3.xaxis.set_major_formatter(lon_formatter)
+            ax3.yaxis.set_major_formatter(lat_formatter)
             if ax_index != len(clusters_to_disp) - 1:
                 ax1.get_xaxis().set_ticklabels([])
             else:
                 ax1.set_xlabel('u (m s$^{-1}$)')
-                ax2.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
+                ax3.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
 
             # Get original samples based on how they've been classified.
 
             # cmap = 'autumn'
             # cmap = 'YlOrRd'
-            ax2.set_extent((-180, 179, -30, 30))
+            ax3.set_extent((-180, 179, -30, 30))
             # ax.set_global()
             hist, lat, lon = hists_latlon[ax_index]
 
@@ -301,9 +317,9 @@ class ShearPlotter:
             masked_hist = hist
             # Works better than imshow.
             # img = ax2.pcolormesh(lon, lat, masked_hist, vmin=0, vmax=hist_max,
-            img = ax2.pcolormesh(lon, lat, masked_hist, vmax=hist_max,
+            img = ax3.pcolormesh(lon, lat, masked_hist, vmax=hist_max,
                                  transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
-            ax2.coastlines()
+            ax3.coastlines()
 
         cbar = fig.colorbar(img, cax=colorbar_ax, # ticks=[0, hist_max],
                             cmap=cmap)
@@ -484,7 +500,7 @@ class ShearPlotter:
 
         # Why no sharex? Because it's difficult to draw on the label ticks on axis
         # [3, 1], the one with the hidden axis below it.
-        fig, axes = plt.subplots(2, 5, sharey=True, figsize=(10, 8))
+        fig, axes = plt.subplots(2, 5, sharey=True, figsize=cm_to_inch(17, 14))
 
         for cluster_index in range(n_clusters):
             ax = axes.flatten()[cluster_index]
@@ -760,8 +776,8 @@ class ShearPlotter:
     def plot_seven_pca_profiles(self, use_pca, filt, norm, res):
         pressure = self.analysis.u.coord('pressure').points
 
-        fig, axes = plt.subplots(1, 7, sharey=True, figsize=(5, 2))
-        fig.subplots_adjust(bottom=0.25)
+        fig, axes = plt.subplots(1, 7, sharey=True, figsize=cm_to_inch(15, 5))
+        fig.subplots_adjust(bottom=0.25, wspace=0.3)
         for pca_index in range(7):
             ax = axes[pca_index]
             ax.set_yticks([1000, 800, 600, 400, 200, 50])
@@ -769,8 +785,8 @@ class ShearPlotter:
             if pca_index == 0:
                 ax.set_ylabel('pressure (hPa)')
 
-            if pca_index == 1:
-                ax.set_xlabel('          PCA magnitude')
+            if pca_index == 3:
+                ax.set_xlabel('PCA magnitude')
 
             sample = res.pca.components_[pca_index]
 
@@ -781,7 +797,7 @@ class ShearPlotter:
             ax.set_xlim((-1, 1))
             ax.set_ylim((pressure[-1], pressure[0]))
 
-            if pca_index == 3:
+            if pca_index == 6:
                 plt.legend(loc=[0.86, 0.8])
 
         title_fmt = 'SEVEN_PCA_PROFILES_{}_{}'
