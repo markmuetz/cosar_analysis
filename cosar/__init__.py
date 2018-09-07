@@ -7,6 +7,7 @@ from cosar.shear_profile_settings import (production_settings,
                                           production_higher_CAPE, production_lower_CAPE,
                                           production_higher_shear, production_lower_shear,
                                           production_higher_favour, production_lower_favour,
+                                          production_23_tropics,
                                           test_settings)
 from cosar.version import VERSION
 
