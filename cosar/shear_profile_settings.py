@@ -43,6 +43,10 @@ production_higher_favour.set('FAVOUR_FACTOR', 5)
 production_lower_favour = production_settings.copy()
 production_lower_favour.set('FAVOUR_FACTOR', 3)
 
+# Actually 23.75N - 23.75S.
+production_23_tropics = production_settings.copy()
+production_23_tropics.set('TROPICS_SLICE', slice(53, 92))
+
 test_settings = AnalysisSettings(dict(
     TROPICS_SLICE = slice(48, 97),
     NH_TROPICS_SLICE = slice(73, 97),

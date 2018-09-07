@@ -21,6 +21,7 @@ analysis_settings = {
     'production_lower_shear': production_lower_shear,
     'production_higher_favour': production_higher_favour,
     'production_lower_favour': production_lower_favour,
+    'production_23_tropics': production_23_tropics,
     'test': test_settings,
 }
 
