@@ -139,9 +139,9 @@ class ShearProfilePlot(Analyser):
                                                        norm, seed, res, disp_res)
                         # plotter.plot_wind_rose_hists(use_pca, print_filt,
                         #                              norm, seed, res, disp_res)
-                        plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
-                                                                norm, seed, res, disp_res)
-                        plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
+                        # plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
+                        #                                         norm, seed, res, disp_res)
+                        # plotter.plot_all_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                         # plotter.plot_nearest_furthest_profiles(use_pca, print_filt, norm, seed, res, disp_res)
                     if use_pca:
                         # plotter.plot_pca_red(use_pca, print_filt, norm, seed, res, disp_res)
