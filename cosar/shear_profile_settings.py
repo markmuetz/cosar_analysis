@@ -2,7 +2,8 @@ from omnium import AnalysisSettings
 
 
 production_settings = AnalysisSettings(dict(
-    TROPICS_SLICE = slice(48, 97),
+    # 23.75N - 23.75S.
+    TROPICS_SLICE = slice(53, 92),
     NH_TROPICS_SLICE = slice(73, 97),
     SH_TROPICS_SLICE = slice(48, 72),
     USE_SEEDS = True,
@@ -43,9 +44,9 @@ production_higher_favour.set('FAVOUR_FACTOR', 5)
 production_lower_favour = production_settings.copy()
 production_lower_favour.set('FAVOUR_FACTOR', 3)
 
-# Actually 23.75N - 23.75S.
-production_23_tropics = production_settings.copy()
-production_23_tropics.set('TROPICS_SLICE', slice(53, 92))
+# These are the old settings - with tropics as 30N - 30S.
+production_30_tropics = production_settings.copy()
+production_30_tropics.set('TROPICS_SLICE', slice(48, 97))
 
 test_settings = AnalysisSettings(dict(
     TROPICS_SLICE = slice(48, 97),
