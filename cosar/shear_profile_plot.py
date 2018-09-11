@@ -3,6 +3,8 @@ import os
 import pickle
 from logging import getLogger
 
+import numpy as np
+
 import iris
 import pandas as pd
 from cosar.egu_poster_figs import (plot_pca_cluster_results,
@@ -84,6 +86,29 @@ class ShearProfilePlot(Analyser):
         with open(self.task.output_filenames[0], 'w') as f:
             f.write('Finished')
 
+    def land_sea_percentages(self, seed, res, disp_res):
+        all_lat = res.X_latlon[0]
+        all_lon = res.X_latlon[1]
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        bins = (39, 192)
+        r = [[-24, 24], [0, 360]]
+
+        land_mask_fn = os.path.join(self.suite.suite_dir, 'land_sea_mask', 'qrparm.mask')
+        land_mask = iris.load(land_mask_fn)[0]
+
+        land_mask_tropics = land_mask.data[self.settings.TROPICS_SLICE, :].astype(bool)
+
+        with open(self.file_path('land_sea_percentages_{}.txt'.format(seed)), 'w') as f:
+            f.write('RWP, land %, sea %\n')
+            for i in range(10):
+                keep = kmeans_red.labels_ == i
+                cluster_lat = all_lat[keep]
+                cluster_lon = all_lon[keep]
+                hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
+                land_frac = hist[land_mask_tropics].sum() / hist.sum()
+                sea_frac = hist[~land_mask_tropics].sum() / hist.sum()
+                f.write('C{}, {:.2f}, {:.2f}\n'.format(i + 1, land_frac * 100, sea_frac * 100))
+
     def display_results(self):
         if self.settings.PLOT_EGU_FIGS:
             plot_gcm_for_schematic()
@@ -133,6 +158,7 @@ class ShearProfilePlot(Analyser):
                     # plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                     # plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if n_clusters == self.settings.DETAILED_CLUSTER:
+                        self.land_sea_percentages(seed, res, disp_res)
                         plotter.plot_profiles_geog_all(use_pca, print_filt,
                                                        norm, seed, res, disp_res)
                         plotter.plot_profiles_geog_loc(use_pca, print_filt,
