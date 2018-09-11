@@ -174,7 +174,11 @@ class ShearProfileFilter(Analyser):
                                                         self.cape,
                                                         filter_on=self.settings.FILTERS,
                                                         **kwargs)
-        self.df = pd.DataFrame(index=dates, data=np.concatenate([u_samples, v_samples], axis=1))
+        pressure = self.u.coord('pressure').points
+        columns = ['u{:.0f}_hPa'.format(p) for p in pressure] +\
+                  ['v{:.0f}_hPa'.format(p) for p in pressure]
+        self.df = pd.DataFrame(index=dates, columns=columns,
+                               data=np.concatenate([u_samples, v_samples], axis=1))
         self.df['lat'] = lat
         self.df['lon'] = lon
 

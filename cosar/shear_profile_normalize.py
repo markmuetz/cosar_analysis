@@ -11,6 +11,7 @@ logger = getLogger('cosar.spn')
 def _normalize_feature_matrix(settings, X_filtered):
     """Perform normalization based on norm."""
     logger.debug('normalizing data')
+
     mag = np.sqrt(X_filtered[:, :settings.NUM_PRESSURE_LEVELS] ** 2 +
                   X_filtered[:, settings.NUM_PRESSURE_LEVELS:] ** 2)
     rot = np.arctan2(X_filtered[:, :settings.NUM_PRESSURE_LEVELS],
@@ -66,6 +67,12 @@ class ShearProfileNormalize(Analyser):
 
     def run(self):
         df = self.df
+
+        # Sanity checks. Make sure that dataframe is laid out how I expect: first num_pres vals
+        # are u vals and num_pres - num_pres * 2 are v vals.
+        num_pres = self.settings.NUM_PRESSURE_LEVELS
+        assert all([col[0] == 'u' for col in self.df.columns[:num_pres]])
+        assert all([col[0] == 'v' for col in self.df.columns[num_pres: num_pres * 2]])
         X_filtered = df.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
         if self.norm is not None:
@@ -76,7 +83,8 @@ class ShearProfileNormalize(Analyser):
             elif self.norm == 'magrot':
                 X = X_magrot
 
-        self.norm_df = pd.DataFrame(index=self.df.index, data=X)
+        columns = self.df.columns[:-2]  # lat/lon are copied over separately.
+        self.norm_df = pd.DataFrame(index=self.df.index, columns=columns, data=X)
         self.norm_df['lat'] = self.df['lat']
         self.norm_df['lon'] = self.df['lon']
         self.norm_df['rot_at_level'] = rot_at_level
