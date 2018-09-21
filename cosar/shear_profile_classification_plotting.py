@@ -146,14 +146,14 @@ class ShearPlotter:
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
         cmap = 'Reds'
-        r = [[-30, 30], [0, 360]]
+        r = [[-24, 24], [0, 360]]
 
         all_lat = res.X_latlon[0]
         all_lon = res.X_latlon[1]
 
         fig = plt.figure(figsize=cm_to_inch(15, 5))
         ax = plt.axes(projection=ccrs.PlateCarree())
-        ax.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+        ax.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
         ax.yaxis.tick_right()
 
         lon_formatter = LongitudeFormatter(zero_direction_label=True)
@@ -162,9 +162,9 @@ class ShearPlotter:
         ax.yaxis.set_major_formatter(lat_formatter)
         ax.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
 
-        ax.set_extent((-180, 179, -30, 30))
+        ax.set_extent((-180, 179, -24, 24))
 
-        bins = (49, 192)
+        bins = (39, 192)
         hist, lat, lon = np.histogram2d(all_lat, all_lon, bins=bins, range=r)
         img = ax.pcolormesh(lon, lat, hist,
                             transform=ccrs.PlateCarree(), cmap=cmap, norm=colors.LogNorm())
@@ -181,6 +181,7 @@ class ShearPlotter:
 
     def plot_profiles_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        pressure = self.analysis.u.coord('pressure').points
 
         clusters_to_disp = list(range(n_clusters))
 
@@ -200,8 +201,8 @@ class ShearPlotter:
         abs_max = 20
 
         cmap = 'Reds'
-        r = [[-30, 30], [0, 360]]
-        bins = (49, 192)
+        r = [[-24, 24], [0, 360]]
+        bins = (39, 192)
 
         hists_latlon = []
         all_lat = res.X_latlon[0]
@@ -210,18 +211,17 @@ class ShearPlotter:
         title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
-        fig = plt.figure(figsize=(cm_to_inch(17, 26)))
-        fig.subplots_adjust(bottom=0.15, hspace=0.01)
-        fig.tight_layout()
-        gs = gridspec.GridSpec(len(clusters_to_disp), 6, width_ratios=[2, 1, 1, 1, 1, 0.4])
-        colorbar_ax = fig.add_axes([0.9, 0.1, 0.02, 0.8])
+        fig = plt.figure(figsize=(cm_to_inch(17, 20)))
+        fig.subplots_adjust(top=0.95, bottom=0.1, left=0.098, right=0.92, hspace=0., wspace=0.05)
+        gs = gridspec.GridSpec(len(clusters_to_disp), 3, width_ratios=[0.9, .4, 4])
+        colorbar_ax = fig.add_axes([0.42, 0.05, 0.4, 0.01])
         axes1 = []
         axes2 = []
         axes3 = []
         for ax_index, i in enumerate(clusters_to_disp):
             axes1.append(plt.subplot(gs[ax_index, 0], aspect='equal'))
             axes2.append(plt.subplot(gs[ax_index, 1], aspect='equal', polar=True))
-            axes3.append(plt.subplot(gs[ax_index, 2:5], projection=ccrs.PlateCarree()))
+            axes3.append(plt.subplot(gs[ax_index, 2], projection=ccrs.PlateCarree()))
 
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = kmeans_red.labels_ == cluster_index
@@ -247,15 +247,19 @@ class ShearPlotter:
 
             ax2.set_theta_direction(-1)
             ax2.set_theta_zero_location('N')
-            ax2.set_xticklabels(['N', 'NW', 'W', 'SW', 'S', 'SE', 'E', 'NE'])
+            ax2.set_xticklabels(['\nN'])
+            # ax2.set_rlabel_position(90)
 
             bins = np.linspace(-np.pi, np.pi, 9)
             hist = np.histogram(rot_at_level[keep], bins=bins)
 
             bin_centres = (bins[:-1] + bins[1:]) / 2
             #ax.bar(15 * np.pi/8, 10,  np.pi / 4, color='blue')
+            percent_total = 0
             for val, ang in zip(hist[0], bin_centres):
                 ax2.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
+                percent_total += val / rot_at_level[keep].shape[0] * 100
+            logger.debug('wind rose distn % total: {}'.format(percent_total))
 
             u = all_u[keep]
             v = all_v[keep]
@@ -263,12 +267,15 @@ class ShearPlotter:
             u_p25, u_median, u_p75 = np.percentile(u, (25, 50, 75), axis=0)
             v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
 
-            ax1.plot(u_median, v_median, 'k-')
+            ax1.axhline(0, color='lightgrey')
+            ax1.axvline(0, color='lightgrey')
+            ax1.plot(u_median[:10], v_median[:10], 'k--')
+            ax1.plot(u_median[10:], v_median[10:], 'k-')
 
             ax1.text(0.05, 0.01, 'C{}'.format(cluster_index + 1),
                      verticalalignment='bottom', horizontalalignment='left',
                      transform=ax1.transAxes,
-                     color='black', fontsize=15)
+                     color='black')
 
             for i in range(len(u_median)):
                 u = u_median[i]
@@ -281,14 +288,18 @@ class ShearPlotter:
                     xy_pos = (-2, 2)
 
                 if i == 0 or i == len(u_median) -1:
-                    ax1.annotate('{}'.format(self.settings.NUM_PRESSURE_LEVELS - i), xy=(u, v), xytext=xy_pos,
+                    logger.debug('Pressure at level {}: {}'.format(self.settings.NUM_PRESSURE_LEVELS - i,
+                                                                   pressure[i]))
+                    ax1.annotate('{}'.format(self.settings.NUM_PRESSURE_LEVELS - i), xy=(u, v),
+                                 xytext=xy_pos,
                                  textcoords='offset points')
             ax1.set_xlim((-10, 25))
-            ax1.set_ylim((-6, 6))
-            if ax_index == len(clusters_to_disp) // 2:
-                ax1.set_ylabel('v (m s$^{-1}$)')
+            ax1.set_ylim((-10, 10))
 
-            ax3.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+            if ax_index == len(clusters_to_disp) // 2:
+                ax1.set_ylabel("v' (m s$^{-1}$)")
+
+            ax3.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
             ax3.yaxis.tick_right()
 
             lon_formatter = LongitudeFormatter(zero_direction_label=True)
@@ -298,14 +309,15 @@ class ShearPlotter:
             if ax_index != len(clusters_to_disp) - 1:
                 ax1.get_xaxis().set_ticklabels([])
             else:
-                ax1.set_xlabel('u (m s$^{-1}$)')
+                ax1.set_xlabel("u' (m s$^{-1}$)")
                 ax3.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
 
             # Get original samples based on how they've been classified.
 
+            # ax2.set_rlim((0, 50))
             # cmap = 'autumn'
             # cmap = 'YlOrRd'
-            ax3.set_extent((-180, 179, -30, 30))
+            ax3.set_extent((-180, 179, -24, 24))
             # ax.set_global()
             hist, lat, lon = hists_latlon[ax_index]
 
@@ -322,6 +334,7 @@ class ShearPlotter:
             ax3.coastlines()
 
         cbar = fig.colorbar(img, cax=colorbar_ax, # ticks=[0, hist_max],
+                            orientation='horizontal',
                             cmap=cmap)
         cbar.set_clim(1, hist_max)
 
@@ -370,7 +383,7 @@ class ShearPlotter:
             title_fmt = 'SEASON_PROFILES_GEOG_LOC_{}_{}_{}_{}_{}_-{}_nclust-{}'
             title = title_fmt.format(season_name, use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
-            r = [[-30, 30], [0, 360]]
+            r = [[-24, 24], [0, 360]]
             no_data = False
             hists_latlon = []
             for ax_index, cluster_index in enumerate(clusters_to_disp):
@@ -384,7 +397,7 @@ class ShearPlotter:
                 cluster_lat = lat[keep]
                 cluster_lon = lon[keep]
 
-                bins = (49, 192)
+                bins = (39, 192)
                 hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
                 hists_latlon.append((hist, lat, lon))
 
@@ -434,7 +447,7 @@ class ShearPlotter:
                 if ax_index == len(clusters_to_disp) // 2:
                     ax1.set_ylabel('v (m s$^{-1}$)')
 
-                ax2.set_yticks([-30, 0, 30], crs=ccrs.PlateCarree())
+                ax2.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
                 ax2.yaxis.tick_right()
 
                 lon_formatter = LongitudeFormatter(zero_direction_label=True)
@@ -451,7 +464,7 @@ class ShearPlotter:
 
                 # cmap = 'autumn'
                 # cmap = 'YlOrRd'
-                ax2.set_extent((-180, 179, -30, 30))
+                ax2.set_extent((-180, 179, -24, 24))
                 # ax.set_global()
                 hist, lat, lon = hists_latlon[ax_index]
 
@@ -673,8 +686,8 @@ class ShearPlotter:
         # cmap = 'hot'
         cmap = 'autumn'
         # cmap = 'YlOrRd'
-        bins = (49, 192)
-        r = [[-30, 30], [0, 360]]
+        bins = (39, 192)
+        r = [[-24, 24], [0, 360]]
 
         all_lat = res.X_latlon[0]
         all_lon = res.X_latlon[1]
@@ -715,7 +728,7 @@ class ShearPlotter:
                 plt.clf()
                 plt.title(title)
 
-                extent = (-180, 180, -30, 30)
+                extent = (-180, 180, -24, 24)
                 logger.debug('extent = {}'.format(extent))
                 plt.imshow(np.roll(hist, int(hist.shape[1] / 2), axis=1), origin='lower',
                            extent=extent, cmap=cmap, norm=colors.LogNorm())
