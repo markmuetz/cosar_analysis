@@ -27,6 +27,7 @@ production_settings = AnalysisSettings(dict(
     LOC='tropics',
 ))
 
+
 # Various sensitivity tests on CAPE_THRESH, SHEAR_PERCENTILE and FAVOUR_FACTOR.
 # Can be run with e.g. omnium run -s production_higher_CAPE ...
 production_higher_CAPE = production_settings.copy()
@@ -47,6 +48,9 @@ production_lower_favour.set('FAVOUR_FACTOR', 3)
 # These are the old settings - with tropics as 30N - 30S.
 production_30_tropics = production_settings.copy()
 production_30_tropics.set('TROPICS_SLICE', slice(48, 97))
+
+production_no_favour_lower = production_settings.copy()
+production_no_favour_lower.set('FAVOUR_LOWER_TROP', False)
 
 test_settings = AnalysisSettings(dict(
     TROPICS_SLICE = slice(48, 97),
