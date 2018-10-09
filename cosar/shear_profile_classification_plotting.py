@@ -40,7 +40,7 @@ class ShearPlotter:
                 plt.title(title)
 
                 plt.scatter(res.X_pca[:, i], res.X_pca[:, j], c=kmeans_red.labels_)
-                plt.savefig(self.save_path(title) + '.png')
+                plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -117,7 +117,7 @@ class ShearPlotter:
             plt.xlabel('wind speed (m s$^{-1}$)')
             plt.ylabel('pressure (hPa)')
 
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
             # Profile hodographs.
             title_fmt = 'HODO_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
@@ -139,7 +139,7 @@ class ShearPlotter:
             plt.xlabel('u (m s$^{-1}$)')
             plt.ylabel('v (m s$^{-1}$)')
 
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -178,7 +178,7 @@ class ShearPlotter:
         cbar = plt.colorbar(img, cax=colorbar_ax, cmap=cmap, orientation='horizontal')
         cbar.set_clim(1, hist.max())
 
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
 
     def plot_profiles_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
@@ -340,7 +340,7 @@ class ShearPlotter:
         cbar.set_clim(1, hist_max)
 
         # plt.tight_layout()
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -489,7 +489,7 @@ class ShearPlotter:
             cbar.set_clim(1, hist_max)
 
             # plt.tight_layout()
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
             plt.close("all")
 
@@ -587,7 +587,7 @@ class ShearPlotter:
         # Profile u/v plots.
         title_fmt = 'ALL_PROFILES_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -622,7 +622,7 @@ class ShearPlotter:
             if i == 0:
                 ax.set_ylabel('v (m s$^{-1}$)')
 
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
         plt.close("all")
 
     def plot_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
@@ -653,7 +653,7 @@ class ShearPlotter:
             if i == 0:
                 ax.set_ylabel('v (m s$^{-1}$)')
 
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
         plt.close("all")
 
     def plot_wind_rose_hists(self, use_pca, filt, norm, seed, res, disp_res):
@@ -678,7 +678,7 @@ class ShearPlotter:
             for val, ang in zip(hist[0], bin_centres):
                 ax.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
             plt.title('C{}'.format(cluster_index + 1))
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
 
     def plot_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
@@ -718,7 +718,7 @@ class ShearPlotter:
             ax.coastlines()
 
             # N.B. set_xlabel will not work for cartopy axes.
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
             if False:
                 # Produces a very similar image.
@@ -738,7 +738,7 @@ class ShearPlotter:
                 ax.set_xlabel('longitude')
                 ax.set_ylabel('latitude')
 
-                plt.savefig(self.save_path(title) + '.png')
+                plt.savefig(self.save_path(title) + '.pdf')
         plt.close("all")
 
     def plot_pca_red(self, use_pca, filt, norm, seed, res, disp_res):
@@ -759,7 +759,7 @@ class ShearPlotter:
             plt.plot(red_profile[self.settings.NUM_PRESSURE_LEVELS:], pressure, 'r--')
 
             plt.ylim((pressure[-1], pressure[0]))
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -783,7 +783,7 @@ class ShearPlotter:
             plt.xlim((-1, 1))
             plt.ylim((pressure[-1], pressure[0]))
             plt.legend(loc='best')
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -816,7 +816,7 @@ class ShearPlotter:
 
         title_fmt = 'SEVEN_PCA_PROFILES_{}_{}'
         title = title_fmt.format(use_pca, filt)
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
         plt.close("all")
 
     def plot_four_pca_profiles(self, use_pca, filt, norm, res):
@@ -848,7 +848,7 @@ class ShearPlotter:
 
         title_fmt = 'FOUR_PCA_PROFILES_{}_{}'
         title = title_fmt.format(use_pca, filt)
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -871,7 +871,7 @@ class ShearPlotter:
         plt.xlabel('# clusters')
         plt.ylabel('score')
 
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
         plt.close("all")
 
     def display_cluster_cluster_dist(self, use_pca, filt, norm, seed, res, disp_res):
@@ -938,7 +938,7 @@ class ShearPlotter:
             ax.set_xlim((-25, 25))
             ax.set_ylim((pressure.max(), pressure.min()))
             ax.set_xticks([-20, 0, 20])
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
             title_fmt = 'FURTHEST_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
@@ -962,7 +962,7 @@ class ShearPlotter:
             ax.set_xlim((-25, 25))
             ax.set_ylim((pressure.max(), pressure.min()))
             ax.set_xticks([-20, 0, 20])
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
             title_fmt = 'MEDIAN_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
@@ -987,7 +987,7 @@ class ShearPlotter:
             ax.set_xlim((-25, 25))
             ax.set_ylim((pressure.max(), pressure.min()))
             ax.set_xticks([-20, 0, 20])
-            plt.savefig(self.save_path(title) + '.png')
+            plt.savefig(self.save_path(title) + '.pdf')
 
     def display_veering_backing(self):
         u = self.analysis.u
@@ -1019,7 +1019,7 @@ class ShearPlotter:
         plt.clf()
         plt.hist(month + 1, bins=bins)
         title = 'RWP_month_all_{}'.format(seed)
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
         plt.clf()
         fig, axes = plt.subplots(5, 2, sharex=True, sharey=True, figsize=(9, 9))
 
@@ -1045,4 +1045,4 @@ class ShearPlotter:
 
         plt.tight_layout()
         title = 'RWP_month_hist_{}'.format(seed)
-        plt.savefig(self.save_path(title) + '.png')
+        plt.savefig(self.save_path(title) + '.pdf')
