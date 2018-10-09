@@ -1017,7 +1017,8 @@ class ShearPlotter:
 
         plt.clf()
         plt.hist(month + 1, bins=bins)
-        plt.savefig(self.save_path('RWP_month_all') + '.png')
+        title = 'RWP_month_all_{}'.format(seed)
+        plt.savefig(self.save_path(title) + '.png')
         plt.clf()
         fig, axes = plt.subplots(5, 2, sharex=True, sharey=True, figsize=(9, 9))
 
@@ -1042,4 +1043,5 @@ class ShearPlotter:
                 ax.plot(bin_centres, year_val, color='grey', label='C{}'.format(i + 1))
 
         plt.tight_layout()
-        plt.savefig(self.save_path('RWP_month_hist') + '.png')
+        title = 'RWP_month_hist_{}'.format(seed)
+        plt.savefig(self.save_path(title) + '.png')
