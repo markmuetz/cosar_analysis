@@ -1,4 +1,5 @@
 from logging import getLogger
+import calendar
 
 import matplotlib
 import numpy as np
@@ -1007,3 +1008,40 @@ class ShearPlotter:
     def plot_RWP_temporal_histograms(self, use_pca, filt, norm, seed, res, disp_res):
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         logger.debug('RWP Temporal hists')
+
+        month = self.analysis.df_filltered['month']
+        year_of_sim = self.analysis.df_filltered['year_of_sim']
+
+        bins = np.linspace(-0.5, 11.5, 13)
+        bin_centres = (bins[:-1] + bins[1:]) / 2
+
+        plt.clf()
+        plt.hist(month + 1, bins=bins)
+        plt.savefig('month_hist_all.png')
+        plt.clf()
+        fig, axes = plt.subplots(5, 2, sharex=True, sharey=True, figsize=(9, 9))
+
+        for i, ax in enumerate(axes.flatten()):
+            # plt.hist(month[km.labels_ == i] + 1, bins=bins)
+            val, bin_edge = np.histogram(month[kmeans_red.labels_ == i], bins=bins)
+
+            ax.set_title('C{}'.format(i + 1), y=0.97)
+            ax.bar(bin_centres, val / 5, color='silver')
+            if i in [4]:
+                ax.set_ylabel('number per year')
+
+            ax.set_xticks(bin_centres)
+            if i in [8, 9]:
+                ax.set_xticklabels([calendar.month_abbr[m + 1] for m in range(12)])
+                plt.setp( ax.xaxis.get_majorticklabels(), rotation=90)
+
+            ax.set_ylim((0, 1100))
+            for y in range(5):
+                year_val, bin_edge = np.histogram(month[(kmeans_red.labels_ == i) &
+                                                        (year_of_sim == y)], bins=bins)
+                ax.plot(bin_centres, year_val, color='grey', label='C{}'.format(i + 1))
+
+        plt.tight_layout()
+        # plt.savefig('month_hist_C{:02d}.png'.format(i + 1))
+        plt.savefig('RWP_month_hist.png'.format(i + 1))
+

@@ -58,8 +58,12 @@ class ShearProfilePlot(Analyser):
         df_filt = self.df_filtered
         doy = [math.floor(h / 24) % 360 for h in df_filt.index]
         month = [math.floor(d / 30) for d in doy]
+        year = np.int32(np.floor(df_filt.index / (360 * 24) + 1970))
+        year_of_sim = np.int32(np.floor((df_filt.index - df_filt.index[0]) / (360 * 24)))
         df_filt['month'] = month
         df_filt['doy'] = doy
+        df_filt['year'] = year
+        df_filt['year_of_sim'] = year_of_sim
 
         # Rem zero based! i.e. 5 == june.
         self.jja = ((df_filt['month'].values == 5) |
