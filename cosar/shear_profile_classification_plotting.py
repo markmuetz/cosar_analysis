@@ -1003,3 +1003,7 @@ class ShearPlotter:
         sh_mean_angle = (r850[:, self.settings.SH_TROPICS_SLICE, :] - r950[:, self.settings.SH_TROPICS_SLICE, :]).mean()
         logger.info('NH wind angle 850 hPa - 950 hPa: {}'.format(nh_mean_angle))
         logger.info('SH wind angle 850 hPa - 950 hPa: {}'.format(sh_mean_angle))
+
+    def plot_RWP_temporal_histograms(self, use_pca, filt, norm, seed, res, disp_res):
+        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        logger.debug('RWP Temporal hists')
