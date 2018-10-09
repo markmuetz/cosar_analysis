@@ -1009,7 +1009,7 @@ class ShearPlotter:
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         logger.debug('RWP Temporal hists')
 
-        month = self.analysis.df_filltered['month']
+        month = self.analysis.df_filtered['month']
         year_of_sim = self.analysis.df_filltered['year_of_sim']
 
         bins = np.linspace(-0.5, 11.5, 13)
