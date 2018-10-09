@@ -162,11 +162,11 @@ class ShearProfilePlot(Analyser):
                     # plotter.plot_profile_results(use_pca, print_filt, norm, seed, res, disp_res)
                     # plotter.plot_geog_loc(use_pca, print_filt, norm, seed, res, disp_res)
                     if n_clusters == self.settings.DETAILED_CLUSTER:
-                        # self.land_sea_percentages(seed, res, disp_res)
-                        # plotter.plot_profiles_geog_all(use_pca, print_filt,
-                        #                                norm, seed, res, disp_res)
-                        # plotter.plot_profiles_geog_loc(use_pca, print_filt,
-                        #                                norm, seed, res, disp_res)
+                        self.land_sea_percentages(seed, res, disp_res)
+                        plotter.plot_profiles_geog_all(use_pca, print_filt,
+                                                       norm, seed, res, disp_res)
+                        plotter.plot_profiles_geog_loc(use_pca, print_filt,
+                                                       norm, seed, res, disp_res)
                         # plotter.plot_wind_rose_hists(use_pca, print_filt,
                         #                              norm, seed, res, disp_res)
                         # plotter.plot_profiles_seasonal_geog_loc(use_pca, print_filt,
