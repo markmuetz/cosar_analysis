@@ -1010,7 +1010,7 @@ class ShearPlotter:
         logger.debug('RWP Temporal hists')
 
         month = self.analysis.df_filtered['month']
-        year_of_sim = self.analysis.df_filltered['year_of_sim']
+        year_of_sim = self.analysis.df_filtered['year_of_sim']
 
         bins = np.linspace(-0.5, 11.5, 13)
         bin_centres = (bins[:-1] + bins[1:]) / 2
