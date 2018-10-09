@@ -1006,6 +1006,7 @@ class ShearPlotter:
         logger.info('SH wind angle 850 hPa - 950 hPa: {}'.format(sh_mean_angle))
 
     def plot_RWP_temporal_histograms(self, use_pca, filt, norm, seed, res, disp_res):
+        """plots temporal histograms of RWP distns over the course of a year"""
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         logger.debug('RWP Temporal hists')
 
