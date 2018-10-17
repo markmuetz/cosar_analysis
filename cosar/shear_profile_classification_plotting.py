@@ -1012,6 +1012,7 @@ class ShearPlotter:
 
         month = self.analysis.df_filtered['month']
         year_of_sim = self.analysis.df_filtered['year_of_sim']
+        lat = self.analysis.df_filtered['lat']
 
         bins = np.linspace(-0.5, 11.5, 13)
         bin_centres = (bins[:-1] + bins[1:]) / 2
@@ -1024,9 +1025,8 @@ class ShearPlotter:
         fig, axes = plt.subplots(5, 2, sharex=True, sharey=True, figsize=(9, 9))
 
         for i, ax in enumerate(axes.flatten()):
-            # plt.hist(month[km.labels_ == i] + 1, bins=bins)
+            # Plot the monthly bars.
             val, bin_edge = np.histogram(month[kmeans_red.labels_ == i], bins=bins)
-
             ax.set_title('C{}'.format(i + 1), y=0.97)
             ax.bar(bin_centres, val / 5, color='silver')
             if i in [4]:
@@ -1037,11 +1037,22 @@ class ShearPlotter:
                 ax.set_xticklabels([calendar.month_abbr[m + 1] for m in range(12)])
                 plt.setp( ax.xaxis.get_majorticklabels(), rotation=90)
 
+            # Plot the individual years.
             ax.set_ylim((0, 1100))
             for y in range(5):
                 year_val, bin_edge = np.histogram(month[(kmeans_red.labels_ == i) &
                                                         (year_of_sim == y)], bins=bins)
                 ax.plot(bin_centres, year_val, color='grey', label='C{}'.format(i + 1))
+
+            # Plot the mean lat on different scale axis.
+            ax2 = ax.twinx()
+            ax2.set_ylim((-24, 24))
+            lat_variation = []
+            for m in range(12):
+                lat_variation.append(lat[(kmeans_red.labels_ == i) & (month == m)].mean())
+            ax2.plot(bin_centres, lat_variation, 'b--')
+            ax2.set_ylabel('lat', color='b')
+            ax2.tick_params('y', colors='b')
 
         plt.tight_layout()
         title = 'RWP_month_hist_{}'.format(seed)
