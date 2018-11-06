@@ -76,14 +76,12 @@ class ShearProfileAnalyse(Analyser):
             all_u = self.X[:, :self.settings.NUM_PRESSURE_LEVELS]
             all_v = self.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
-        self.df_denorm = pd.DataFrame(index=self.df_filtered.index,
-                                      columns=self.df_filtered.columns[:-2],
-                                      data=np.concatenate([all_u, all_v], axis=1))
-        self.df_denorm['lat'] = self.df_filtered['lat']
-        self.df_denorm['lon'] = self.df_filtered['lon']
+        self.df_denorm_mag = pd.DataFrame(index=self.df_filtered.index,
+                                          columns=self.df_filtered.columns[:-2],
+                                          data=np.concatenate([all_u, all_v], axis=1))
 
     def _seasonal_info(self):
-        """Calculate some useful temporal info
+        """Calculate some useful temporal info.
 
         Calculates:
         * doy (Day Of Year)
@@ -105,22 +103,24 @@ class ShearProfileAnalyse(Analyser):
         df_seasonal_info['year_of_sim'] = year_of_sim
 
         # Rem zero based! i.e. 5 == june.
-        self.jja = ((df_seasonal_info['month'].values == 5) |
-                    (df_seasonal_info['month'].values == 6) |
-                    (df_seasonal_info['month'].values == 7))
-        self.son = ((df_seasonal_info['month'].values == 8) |
-                    (df_seasonal_info['month'].values == 9) |
-                    (df_seasonal_info['month'].values == 10))
-        self.djf = ((df_seasonal_info['month'].values == 11) |
-                    (df_seasonal_info['month'].values == 0) |
-                    (df_seasonal_info['month'].values == 1))
-        self.mam = ((df_seasonal_info['month'].values == 2) |
-                    (df_seasonal_info['month'].values == 3) |
-                    (df_seasonal_info['month'].values == 4))
+        df_seasonal_info['jja'] = ((df_seasonal_info['month'].values == 5) |
+                                   (df_seasonal_info['month'].values == 6) |
+                                   (df_seasonal_info['month'].values == 7))
+        df_seasonal_info['son'] = ((df_seasonal_info['month'].values == 8) |
+                                   (df_seasonal_info['month'].values == 9) |
+                                   (df_seasonal_info['month'].values == 10))
+        df_seasonal_info['djf'] = ((df_seasonal_info['month'].values == 11) |
+                                   (df_seasonal_info['month'].values == 0) |
+                                   (df_seasonal_info['month'].values == 1))
+        df_seasonal_info['mam'] = ((df_seasonal_info['month'].values == 2) |
+                                   (df_seasonal_info['month'].values == 3) |
+                                   (df_seasonal_info['month'].values == 4))
 
         # Sanity check.
-        assert len(df_seasonal_info) == (self.jja.sum() + self.son.sum() +
-                                         self.djf.sum() + self.mam.sum())
+        assert len(df_seasonal_info) == (df_seasonal_info['jja'].sum() +
+                                         df_seasonal_info['son'].sum() +
+                                         df_seasonal_info['djf'].sum() +
+                                         df_seasonal_info['mam'].sum())
         self.df_seasonal_info = df_seasonal_info
 
     def _land_sea_stats(self, n_clusters, seed):
@@ -151,5 +151,5 @@ class ShearProfileAnalyse(Analyser):
                 f.write('C{}, {:.2f}, {:.2f}\n'.format(i + 1, land_frac * 100, sea_frac * 100))
 
     def save(self, state=None, suite=None):
-        self.df_denorm.to_hdf(self.task.output_filenames[0], 'denorm_mag')
+        self.df_denorm_mag.to_hdf(self.task.output_filenames[0], 'denorm_mag')
         self.df_seasonal_info.to_hdf(self.task.output_filenames[1], 'seasonal_info')

@@ -22,59 +22,73 @@ def dist_from_rwp(u_rwp, v_rwp, u, v):
     return np.sum(np.sqrt((u - u_rwp[None, :])**2 + (v - v_rwp[None, :])**2), axis=1)
 
 
-class ShearPlotter:
-    # TODO: docstring
-    def __init__(self, analysis, settings):
+class FigPlotter:
+    """Plots all figs for the final shear_profile_plot analyser"""
+    def __init__(self, analysis, settings, n_clusters, seed):
         self.analysis = analysis
         self.settings = settings
+        self.n_clusters = n_clusters
+        self.seed = seed
+        label_key = 'nc-{}_seed-{}'.format(self.n_clusters, self.seed)
+        self.labels = self.analysis.df_labels[label_key]
 
         self.pressure = self.analysis.u.coord('pressure').points
+        self._calc_cluster_hists()
 
-    def save_path(self, title):
-        # TODO: docstring
+    def _calc_cluster_hists(self):
+        """Calc histograms of lat/lons to build up heatmaps of where each cluster is active."""
+        all_lat = self.analysis.X_latlon[0]
+        all_lon = self.analysis.X_latlon[1]
+
+        # Will be one per cluster_index.
+        self.hists_latlon = []
+
+        bins = (39, 192)
+        geog_domain = [[-24, 24], [0, 360]]
+
+        for cluster_index in list(range(self.n_clusters)):
+            keep = self.labels == cluster_index
+            # Get original samples based on how they've been classified.
+            cluster_lat = all_lat[keep]
+            cluster_lon = all_lon[keep]
+
+            hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=geog_domain)
+            self.hists_latlon.append((hist, lat, lon))
+
+    def _file_path(self, title):
+        """Useful wrapper"""
         return self.analysis.file_path(title)
 
-    def plot_cluster_results(self, use_pca, filt, norm, seed, res, disp_res):
-        # TODO: docstring
-        n_pca_components, n_clusters, kmeans_red, *_ = disp_res
+    def plot_cluster_results(self):
+        """Plots scatter graph of each principal component against every other.
+
+        i.e. plots PC2 vs PC1, PC3 vs PC1..."""
         # Loop over all axes of PCA.
-        for i in range(1, n_pca_components):
+        for i in range(1, self.analysis.X_pca.shape[1]):
             for j in range(i):
-                title_fmt = 'CLUSTERS_use_pca-{}_filt-{}_norm-{}_n_pca_comp-{}_n_clust-{}_comp-({},{})'
-                title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters, i, j)
+                title_fmt = 'CLUSTERS_nclust-{}_comp-({},{})'
+                title = title_fmt.format(self.n_clusters, i, j)
                 plt.figure(title)
                 plt.clf()
                 plt.title(title)
 
-                plt.scatter(self.analysis.X_pca[:, i], self.analysis.X_pca[:, j], c=kmeans_red.labels_)
-                plt.savefig(self.save_path(title) + '.pdf')
+                plt.scatter(self.analysis.X_pca[:, i], self.analysis.X_pca[:, j], c=self.labels)
+                plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
-    def plot_profile_results(self, use_pca, filt, norm, seed, res, disp_res):
-        # TODO: docstring
-        pressure = self.analysis.u.coord('pressure').points
-        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+    def plot_profile_results(self):
+        """Plots profile of each RWP as individual graphs."""
+        # TODO: DRY
+        pressure = self.pressure
 
-        # TODO: denorm
-        if self.analysis.max_mag is not None:
-            # De-normalize data. N.B. this takes into account any changes made by
-            # settings.FAVOUR_LOWER_TROP, as it uses self.analysis.max_mag to do de-norm, which is what's modified
-            # in the first place.
-            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
-            rot = np.arctan2(norm_v, norm_u)
-            all_u = mag * np.cos(rot)
-            all_v = mag * np.sin(rot)
-        else:
-            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+        all_u = self.analysis.all_u
+        all_v = self.analysis.all_v
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
 
-        for cluster_index in range(n_clusters):
-            keep = kmeans_red.labels_ == cluster_index
+        for cluster_index in range(self.n_clusters):
+            keep = self.labels == cluster_index
 
             u = all_u[keep]
             v = all_v[keep]
@@ -92,9 +106,8 @@ class ShearPlotter:
             v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
 
             # Profile u/v plots.
-            title_fmt = 'PROFILES_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
-            title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
-                                     cluster_index, keep.sum())
+            title_fmt = 'PROFILES_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(n_clusters, cluster_index, keep.sum())
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -126,7 +139,7 @@ class ShearPlotter:
             plt.xlabel('wind speed (m s$^{-1}$)')
             plt.ylabel('pressure (hPa)')
 
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
             # Profile hodographs.
             title_fmt = 'HODO_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
@@ -148,7 +161,7 @@ class ShearPlotter:
             plt.xlabel('u (m s$^{-1}$)')
             plt.ylabel('v (m s$^{-1}$)')
 
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -188,27 +201,17 @@ class ShearPlotter:
         cbar = plt.colorbar(img, cax=colorbar_ax, cmap=cmap, orientation='horizontal')
         cbar.set_clim(1, hist.max())
 
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
 
-    def plot_profiles_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
+    def plot_profiles_geog_loc(self):
         # TODO: docstring
-        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
+        # n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         pressure = self.analysis.u.coord('pressure').points
 
         clusters_to_disp = list(range(n_clusters))
 
-        # TODO: denorm
-        if self.analysis.max_mag is not None:
-            # De-normalize data.
-            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
-            rot = np.arctan2(norm_v, norm_u)
-            all_u = mag * np.cos(rot)
-            all_v = mag * np.sin(rot)
-        else:
-            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+        all_u = self.analysis.all_u
+        all_v = self.analysis.all_v
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
@@ -236,23 +239,14 @@ class ShearPlotter:
             axes2.append(plt.subplot(gs[ax_index, 1], aspect='equal', polar=True))
             axes3.append(plt.subplot(gs[ax_index, 2], projection=ccrs.PlateCarree()))
 
-        for ax_index, cluster_index in enumerate(clusters_to_disp):
-            keep = kmeans_red.labels_ == cluster_index
-            # Get original samples based on how they've been classified.
-            cluster_lat = all_lat[keep]
-            cluster_lon = all_lon[keep]
-
-            hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon, bins=bins, range=r)
-            hists_latlon.append((hist, lat, lon))
-
-        hist_max = np.max([h[0].max() for h in hists_latlon])
-        hist_min = np.min([h[0].min() for h in hists_latlon])
+        hist_max = np.max([h[0].max() for h in self.hists_latlon])
+        hist_min = np.min([h[0].min() for h in self.hists_latlon])
 
         xy_pos_map = { }
         rot_at_level = self.analysis.df_normalized['rot_at_level']
 
         for ax_index, cluster_index in enumerate(clusters_to_disp):
-            keep = kmeans_red.labels_ == cluster_index
+            keep = self.labels == cluster_index
 
             ax1 = axes1[ax_index]
             ax2 = axes2[ax_index]
@@ -332,7 +326,7 @@ class ShearPlotter:
             # cmap = 'YlOrRd'
             ax3.set_extent((-180, 179, -24, 24))
             # ax.set_global()
-            hist, lat, lon = hists_latlon[ax_index]
+            hist, lat, lon = self.hists_latlon[ax_index]
 
             # ax.imshow(hist, origin='upper', extent=extent,
             # transform=ccrs.PlateCarree(), cmap=cmap)
@@ -352,24 +346,14 @@ class ShearPlotter:
         cbar.set_clim(1, hist_max)
 
         # plt.tight_layout()
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
     def plot_profiles_seasonal_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
         # TODO: docstring
-        # TODO: denorm
-        if self.analysis.max_mag is not None:
-            # De-normalize data.
-            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
-            rot = np.arctan2(norm_v, norm_u)
-            all_u = mag * np.cos(rot)
-            all_v = mag * np.sin(rot)
-        else:
-            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+        all_u = self.analysis.all_u
+        all_v = self.analysis.all_v
 
         for season_name, season in [('son', self.analysis.son),
                                     ('djf', self.analysis.djf),
@@ -402,7 +386,7 @@ class ShearPlotter:
             no_data = False
             hists_latlon = []
             for ax_index, cluster_index in enumerate(clusters_to_disp):
-                keep = (kmeans_red.labels_ == cluster_index) & season
+                keep = (self.labels == cluster_index) & season
                 if not keep.sum():
                     no_data = True
                     break
@@ -426,7 +410,7 @@ class ShearPlotter:
             xy_pos_map = { }
 
             for ax_index, cluster_index in enumerate(clusters_to_disp):
-                keep = kmeans_red.labels_ == cluster_index
+                keep = self.labels == cluster_index
 
                 ax1 = axes1[ax_index]
                 ax2 = axes2[ax_index]
@@ -503,7 +487,7 @@ class ShearPlotter:
             cbar.set_clim(1, hist_max)
 
             # plt.tight_layout()
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
             plt.close("all")
 
@@ -512,18 +496,8 @@ class ShearPlotter:
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
-        # TODO: denorm
-        if self.analysis.max_mag is not None:
-            # De-normalize data.
-            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
-            rot = np.arctan2(norm_v, norm_u)
-            all_u = mag * np.cos(rot)
-            all_v = mag * np.sin(rot)
-        else:
-            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+        all_u = self.analysis.all_u
+        all_v = self.analysis.all_v
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
@@ -535,7 +509,7 @@ class ShearPlotter:
         for cluster_index in range(n_clusters):
             ax = axes.flatten()[cluster_index]
 
-            keep = kmeans_red.labels_ == cluster_index
+            keep = self.labels == cluster_index
 
             u = all_u[keep]
             v = all_v[keep]
@@ -603,7 +577,7 @@ class ShearPlotter:
         # Profile u/v plots.
         title_fmt = 'ALL_PROFILES_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -639,7 +613,7 @@ class ShearPlotter:
             if i == 0:
                 ax.set_ylabel('v (m s$^{-1}$)')
 
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
         plt.close("all")
 
     def plot_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
@@ -671,7 +645,7 @@ class ShearPlotter:
             if i == 0:
                 ax.set_ylabel('v (m s$^{-1}$)')
 
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
         plt.close("all")
 
     def plot_wind_rose_hists(self, use_pca, filt, norm, seed, res, disp_res):
@@ -682,7 +656,7 @@ class ShearPlotter:
         for cluster_index in range(n_clusters):
             title_fmt = 'WIND_ROSE_HIST_{}_{}_{}_{}_{}_-{}_nclust-{}'
             title = title_fmt.format(cluster_index, use_pca, filt, norm, seed, n_pca_components, n_clusters)
-            keep = kmeans_red.labels_ == cluster_index
+            keep = self.labels == cluster_index
             fig = plt.figure(figsize=(8, 8))
             ax = fig.add_axes([.1, .1, .8, .8], polar=True)
             ax.set_theta_direction(-1)
@@ -697,7 +671,7 @@ class ShearPlotter:
             for val, ang in zip(hist[0], bin_centres):
                 ax.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
             plt.title('C{}'.format(cluster_index + 1))
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
 
     def plot_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
@@ -713,7 +687,7 @@ class ShearPlotter:
         all_lat = self.analysis.X_latlon[0]
         all_lon = self.analysis.X_latlon[1]
         for cluster_index in range(n_clusters):
-            keep = kmeans_red.labels_ == cluster_index
+            keep = self.labels == cluster_index
 
             # Get original samples based on how they've been classified.
             cluster_lat = all_lat[keep]
@@ -738,7 +712,7 @@ class ShearPlotter:
             ax.coastlines()
 
             # N.B. set_xlabel will not work for cartopy axes.
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
             if False:
                 # Produces a very similar image.
@@ -758,7 +732,7 @@ class ShearPlotter:
                 ax.set_xlabel('longitude')
                 ax.set_ylabel('latitude')
 
-                plt.savefig(self.save_path(title) + '.pdf')
+                plt.savefig(self._file_path(title) + '.pdf')
         plt.close("all")
 
     def plot_pca_red(self, use_pca, filt, norm, seed, res, disp_res):
@@ -780,7 +754,7 @@ class ShearPlotter:
             plt.plot(red_profile[self.settings.NUM_PRESSURE_LEVELS:], pressure, 'r--')
 
             plt.ylim((pressure[-1], pressure[0]))
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -805,7 +779,7 @@ class ShearPlotter:
             plt.xlim((-1, 1))
             plt.ylim((pressure[-1], pressure[0]))
             plt.legend(loc='best')
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -840,7 +814,7 @@ class ShearPlotter:
 
         title_fmt = 'SEVEN_PCA_PROFILES_{}_{}'
         title = title_fmt.format(use_pca, filt)
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
         plt.close("all")
 
     def plot_four_pca_profiles(self, use_pca, filt, norm, res):
@@ -873,7 +847,7 @@ class ShearPlotter:
 
         title_fmt = 'FOUR_PCA_PROFILES_{}_{}'
         title = title_fmt.format(use_pca, filt)
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
@@ -892,7 +866,7 @@ class ShearPlotter:
         plt.xlabel('# clusters')
         plt.ylabel('score')
 
-        plt.savefig(analyser.file_path(title) + '.pdf')
+        plt.savefig(analyser._file_path(title) + '.pdf')
         plt.close("all")
 
     def plot_nearest_furthest_profiles(self, use_pca, filt, norm, seed, res, disp_res):
@@ -900,19 +874,11 @@ class ShearPlotter:
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
-        # TODO: denorm
-        # De-normalize data. N.B. this takes into account any changes made by
-        # settings.FAVOUR_LOWER_TROP, as it uses self.analysis.max_mag to do de-norm, which is what's modified
-        # in the first place.
-        norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-        norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-        mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
-        rot = np.arctan2(norm_v, norm_u)
-        all_u = mag * np.cos(rot)
-        all_v = mag * np.sin(rot)
+        all_u = self.analysis.all_u
+        all_v = self.analysis.all_v
 
         for cluster_index in range(n_clusters):
-            keep = kmeans_red.labels_ == cluster_index
+            keep = self.labels == cluster_index
 
             u = all_u[keep]
             v = all_v[keep]
@@ -947,7 +913,7 @@ class ShearPlotter:
             ax.set_xlim((-25, 25))
             ax.set_ylim((pressure.max(), pressure.min()))
             ax.set_xticks([-20, 0, 20])
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
             title_fmt = 'FURTHEST_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
@@ -971,7 +937,7 @@ class ShearPlotter:
             ax.set_xlim((-25, 25))
             ax.set_ylim((pressure.max(), pressure.min()))
             ax.set_xticks([-20, 0, 20])
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
             title_fmt = 'MEDIAN_{}_{}_{}_{}_-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters,
@@ -996,7 +962,7 @@ class ShearPlotter:
             ax.set_xlim((-25, 25))
             ax.set_ylim((pressure.max(), pressure.min()))
             ax.set_xticks([-20, 0, 20])
-            plt.savefig(self.save_path(title) + '.pdf')
+            plt.savefig(self._file_path(title) + '.pdf')
 
     def display_veering_backing(self):
         # TODO: docstring
@@ -1031,13 +997,13 @@ class ShearPlotter:
         plt.clf()
         plt.hist(month + 1, bins=bins)
         title = 'RWP_month_all_{}'.format(seed)
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
         plt.clf()
         fig, axes = plt.subplots(5, 2, sharex=True, sharey=True, figsize=(9, 9))
 
         for i, ax in enumerate(axes.flatten()):
             # Plot the monthly bars.
-            val, bin_edge = np.histogram(month[kmeans_red.labels_ == i], bins=bins)
+            val, bin_edge = np.histogram(month[self.labels == i], bins=bins)
             ax.set_title('C{}'.format(i + 1), y=0.97)
             ax.bar(bin_centres, val / 5, color='silver')
             if i in [4]:
@@ -1051,7 +1017,7 @@ class ShearPlotter:
             # Plot the individual years.
             ax.set_ylim((0, 1100))
             for y in range(5):
-                year_val, bin_edge = np.histogram(month[(kmeans_red.labels_ == i) &
+                year_val, bin_edge = np.histogram(month[(self.labels == i) &
                                                         (year_of_sim == y)], bins=bins)
                 ax.plot(bin_centres, year_val, color='grey', label='C{}'.format(i + 1))
 
@@ -1060,11 +1026,11 @@ class ShearPlotter:
             ax2.set_ylim((-24, 24))
             lat_variation = []
             for m in range(12):
-                lat_variation.append(lat[(kmeans_red.labels_ == i) & (month == m)].mean())
+                lat_variation.append(lat[(self.labels == i) & (month == m)].mean())
             ax2.plot(bin_centres, lat_variation, 'b--')
             ax2.set_ylabel('lat', color='b')
             ax2.tick_params('y', colors='b')
 
         plt.tight_layout()
         title = 'RWP_month_hist_{}'.format(seed)
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.pdf')
