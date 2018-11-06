@@ -24,6 +24,7 @@ class ShearResult(object):
 
 
 class ShearProfileKmeansCluster(Analyser):
+    # TODO: docstring
     analysis_name = 'shear_profile_kmeans_cluster'
     multi_file = True
 

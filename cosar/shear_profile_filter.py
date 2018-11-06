@@ -10,7 +10,8 @@ logger = getLogger('cosar.spf')
 
 
 def _calc_shear(u_slice, v_slice, dp):
-    # ditto. Note the newaxis/broadcasting to divide 3D array by 1D array.
+    # TODO: docstring.
+    # Note the newaxis/broadcasting to divide 3D array by 1D array.
     dudp = (u_slice.data[:-1, :, :] - u_slice.data[1:, :, :]) \
            / dp[:, None, None]
     dvdp = (v_slice.data[:-1, :, :] - v_slice.data[1:, :, :]) \
@@ -22,6 +23,7 @@ def _calc_shear(u_slice, v_slice, dp):
 
 
 def _extract_lat_lon(lat_slice, lon_slice, u):
+    # TODO: docstring.
     logger.debug('extracting lat lon')
     lat = u[0, 0, lat_slice, lon_slice].coord('latitude').points
     lon = u[0, 0, lat_slice, lon_slice].coord('longitude').points
@@ -35,8 +37,10 @@ def _filter(settings, u, v, w, cape,
             t_slice=slice(None),
             lat_slice=slice(None),
             lon_slice=slice(None)):
+    # TODO: docstring.
+    # TODO: shorten/split
 
-    # Explanation: slice arrays on t, lat, lon
+    # Explanation: slice cubes on t, lat, lon
     # u_red == u_reduced.
     u_red = u[t_slice, :, lat_slice, lon_slice]
     v_red = v[t_slice, :, lat_slice, lon_slice]
@@ -143,6 +147,7 @@ def _filter(settings, u, v, w, cape,
 
 
 class ShearProfileFilter(Analyser):
+    # TODO: docstring.
     analysis_name = 'shear_profile_filter'
     multi_file = True
     input_dir = 'share/data/history/{expt}'
@@ -177,6 +182,7 @@ class ShearProfileFilter(Analyser):
         pressure = self.u.coord('pressure').points
         columns = ['u{:.0f}_hPa'.format(p) for p in pressure] +\
                   ['v{:.0f}_hPa'.format(p) for p in pressure]
+        # TODO: rename.
         self.df = pd.DataFrame(index=dates, columns=columns,
                                data=np.concatenate([u_samples, v_samples], axis=1))
         self.df['lat'] = lat

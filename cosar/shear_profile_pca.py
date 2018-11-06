@@ -35,6 +35,7 @@ def _calc_pca(settings, X, n_pca_components=None, expl_var_min=None):
 
 
 class ShearProfilePca(Analyser):
+    # TODO: docstring
     analysis_name = 'shear_profile_pca'
     single_file = True
 
@@ -55,12 +56,13 @@ class ShearProfilePca(Analyser):
 
         X_pca, pca, n_pca_components = _calc_pca(self.settings, X_normalized)
         self.pca_n_pca_components = (pca, n_pca_components)
-        self.pca_df = pd.DataFrame(index=self.df.index, data=X_pca)
+        columns = self.df.columns[:-2]  # lat/lon are copied over separately.
+        self.pca_df = pd.DataFrame(index=self.df.index, columns=columns, data=X_pca)
         self.pca_df['lat'] = self.df['lat']
         self.pca_df['lon'] = self.df['lon']
 
     def save(self, state=None, suite=None):
-        self.pca_df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
+        self.pca_df.to_hdf(self.task.output_filenames[0], 'pca_profile')
         dirname = os.path.dirname(self.task.output_filenames[0])
         pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
         pickle.dump(self.pca_n_pca_components, open(pca_pickle_path, 'wb'))

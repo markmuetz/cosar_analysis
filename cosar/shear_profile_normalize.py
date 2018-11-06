@@ -9,7 +9,7 @@ logger = getLogger('cosar.spn')
 
 
 def _normalize_feature_matrix(settings, X_filtered):
-    """Perform normalization based on norm."""
+    # TODO: docstring
     logger.debug('normalizing data')
 
     mag = np.sqrt(X_filtered[:, :settings.NUM_PRESSURE_LEVELS] ** 2 +
@@ -52,6 +52,7 @@ def _normalize_feature_matrix(settings, X_filtered):
 
 
 class ShearProfileNormalize(Analyser):
+    # TODO: docstring
     analysis_name = 'shear_profile_normalize'
     single_file = True
     input_dir = 'omnium_output/{version_dir}/{expt}'
@@ -63,6 +64,7 @@ class ShearProfileNormalize(Analyser):
 
     def load(self):
         logger.debug('override load')
+        # TODO: name
         self.df = pd.read_hdf(self.task.filenames[0])
 
     def run(self):

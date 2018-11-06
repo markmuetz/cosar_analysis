@@ -1,6 +1,7 @@
 from omnium import AnalysisSettings
 
 
+# TODO: doc all settings.
 production_settings = AnalysisSettings(dict(
     # 23.75N - 23.75S.
     TROPICS_SLICE = slice(53, 92),

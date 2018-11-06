@@ -17,18 +17,22 @@ logger = getLogger('cosar.spca')
 
 
 def dist_from_rwp(u_rwp, v_rwp, u, v):
+    # TODO: docstring
     return np.sum(np.sqrt((u - u_rwp[None, :])**2 + (v - v_rwp[None, :])**2), axis=1)
 
 
 class ShearPlotter:
+    # TODO: docstring
     def __init__(self, analysis, settings):
         self.analysis = analysis
         self.settings = settings
 
     def save_path(self, title):
+        # TODO: docstring
         return self.analysis.file_path(title)
 
     def plot_cluster_results(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         n_pca_components, n_clusters, kmeans_red, *_ = disp_res
         # Loop over all axes of PCA.
         for i in range(1, n_pca_components):
@@ -45,6 +49,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_profile_results(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
@@ -144,6 +149,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_profiles_geog_all(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
         cmap = 'Reds'
@@ -181,6 +187,7 @@ class ShearPlotter:
         plt.savefig(self.save_path(title) + '.pdf')
 
     def plot_profiles_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         pressure = self.analysis.u.coord('pressure').points
 
@@ -345,6 +352,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_profiles_seasonal_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         if res.max_mag is not None:
             # De-normalize data.
             norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
@@ -494,6 +502,7 @@ class ShearPlotter:
             plt.close("all")
 
     def plot_all_profiles(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
@@ -592,6 +601,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_orig_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
+        # TODO: docstring
         title_fmt = 'ORIG_LEVEL_HISTS_{}_{}_{}_{}_{}_-{}_nclust-{}'
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
@@ -626,6 +636,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_level_hists(self, use_pca, filt, norm, seed, res, disp_res, loc):
+        # TODO: docstring
         title_fmt = 'LEVEL_HISTS_{}_{}_{}_{}_{}_-{}_nclust-{}'
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
@@ -657,6 +668,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_wind_rose_hists(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         rot_at_level = self.analysis.df_normalized['rot_at_level']
 
@@ -682,6 +694,7 @@ class ShearPlotter:
 
 
     def plot_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         # cmap = 'hot'
@@ -742,6 +755,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_pca_red(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
@@ -764,6 +778,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_pca_profiles(self, use_pca, filt, norm, res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
 
         for pca_index in range(res.pca.n_components):
@@ -788,6 +803,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_seven_pca_profiles(self, use_pca, filt, norm, res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
 
         fig, axes = plt.subplots(1, 7, sharey=True, figsize=cm_to_inch(15, 5))
@@ -820,6 +836,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_four_pca_profiles(self, use_pca, filt, norm, res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
 
         fig, axes = plt.subplots(1, 4, sharey=True, figsize=(5, 2))
@@ -853,6 +870,7 @@ class ShearPlotter:
         plt.close("all")
 
     def plot_scores(self, use_pca, filt, norm, res):
+        # TODO: docstring
         title_fmt = 'KMEANS_SCORES_{}_{}_{}'
         title = title_fmt.format(use_pca, filt, norm)
         plt.figure(title)
@@ -875,6 +893,7 @@ class ShearPlotter:
         plt.close("all")
 
     def display_cluster_cluster_dist(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         title_fmt = 'CLUST_CLUST_DIST_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
@@ -889,6 +908,7 @@ class ShearPlotter:
         cc_dist.dump(np_filename)
 
     def plot_nearest_furthest_profiles(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
@@ -990,6 +1010,7 @@ class ShearPlotter:
             plt.savefig(self.save_path(title) + '.pdf')
 
     def display_veering_backing(self):
+        # TODO: docstring
         u = self.analysis.u
         v = self.analysis.v
 
@@ -1006,6 +1027,7 @@ class ShearPlotter:
         logger.info('SH wind angle 850 hPa - 950 hPa: {}'.format(sh_mean_angle))
 
     def plot_RWP_temporal_histograms(self, use_pca, filt, norm, seed, res, disp_res):
+        # TODO: docstring
         """plots temporal histograms of RWP distns over the course of a year"""
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         logger.debug('RWP Temporal hists')

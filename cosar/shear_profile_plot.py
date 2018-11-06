@@ -65,6 +65,7 @@ class ShearProfilePlot(Analyser):
         df_filt['year'] = year
         df_filt['year_of_sim'] = year_of_sim
 
+        # TODO: Add a new analysis step that calculates and saves these.
         # Rem zero based! i.e. 5 == june.
         self.jja = ((df_filt['month'].values == 5) |
                     (df_filt['month'].values == 6) |
