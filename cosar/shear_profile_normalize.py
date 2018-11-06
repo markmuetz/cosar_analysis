@@ -29,7 +29,7 @@ def _normalize_feature_matrix(settings, X_filtered):
     norm_mag = mag / max_mag[None, :]
     u_norm_mag = norm_mag * np.cos(rot)
     v_norm_mag = norm_mag * np.sin(rot)
-    # Normalize the profiles by the rotation at level 4 == 850 hPa.
+    # Normalize the profiles by the rotation at 850 hPa.
     rot_at_level = rot[:, settings.INDEX_850HPA]
     norm_rot = rot - rot_at_level[:, None]
     logger.debug('# prof with mag<1 at 850 hPa: {}'.format((mag[:, settings.INDEX_850HPA] < 1).sum()))
@@ -64,18 +64,17 @@ class ShearProfileNormalize(Analyser):
 
     def load(self):
         logger.debug('override load')
-        # TODO: name
-        self.df = pd.read_hdf(self.task.filenames[0])
+        self.df_filtered = pd.read_hdf(self.task.filenames[0])
 
     def run(self):
-        df = self.df
+        df_filtered = self.df_filtered
 
         # Sanity checks. Make sure that dataframe is laid out how I expect: first num_pres vals
         # are u vals and num_pres - num_pres * 2 are v vals.
         num_pres = self.settings.NUM_PRESSURE_LEVELS
-        assert all([col[0] == 'u' for col in self.df.columns[:num_pres]])
-        assert all([col[0] == 'v' for col in self.df.columns[num_pres: num_pres * 2]])
-        X_filtered = df.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
+        assert all([col[0] == 'u' for col in self.df_filtered.columns[:num_pres]])
+        assert all([col[0] == 'v' for col in self.df_filtered.columns[num_pres: num_pres * 2]])
+        X_filtered = df_filtered.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
         if self.norm is not None:
             X_mag, X_magrot, max_mag, rot_at_level = _normalize_feature_matrix(self.settings,
@@ -85,10 +84,10 @@ class ShearProfileNormalize(Analyser):
             elif self.norm == 'magrot':
                 X = X_magrot
 
-        columns = self.df.columns[:-2]  # lat/lon are copied over separately.
-        self.norm_df = pd.DataFrame(index=self.df.index, columns=columns, data=X)
-        self.norm_df['lat'] = self.df['lat']
-        self.norm_df['lon'] = self.df['lon']
+        columns = self.df_filtered.columns[:-2]  # lat/lon are copied over separately.
+        self.norm_df = pd.DataFrame(index=self.df_filtered.index, columns=columns, data=X)
+        self.norm_df['lat'] = self.df_filtered['lat']
+        self.norm_df['lon'] = self.df_filtered['lon']
         self.norm_df['rot_at_level'] = rot_at_level
         self.max_mag_df = pd.DataFrame(data=max_mag)
 
