@@ -2,6 +2,7 @@ from cosar.shear_profile_filter import ShearProfileFilter
 from cosar.shear_profile_kmeans_cluster import ShearProfileKmeansCluster
 from cosar.shear_profile_normalize import ShearProfileNormalize
 from cosar.shear_profile_pca import ShearProfilePca
+from cosar.shear_profile_analyse import ShearProfileAnalyse
 from cosar.shear_profile_plot import ShearProfilePlot
 from cosar.shear_profile_settings import (production_settings,
                                           production_higher_CAPE, production_lower_CAPE,
@@ -34,5 +35,6 @@ analyser_classes = [
     ShearProfileNormalize,
     ShearProfilePca,
     ShearProfileKmeansCluster,
+    ShearProfileAnalyse,
     ShearProfilePlot,
 ]

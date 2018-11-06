@@ -17,7 +17,8 @@ logger = getLogger('cosar.spca')
 
 
 def dist_from_rwp(u_rwp, v_rwp, u, v):
-    # TODO: docstring
+    """Calculate the distance of given profiles from an RWP."""
+    # N.B. None broadcasting of 1D u_rwp to 2D (n samples) u.
     return np.sum(np.sqrt((u - u_rwp[None, :])**2 + (v - v_rwp[None, :])**2), axis=1)
 
 
@@ -26,6 +27,8 @@ class ShearPlotter:
     def __init__(self, analysis, settings):
         self.analysis = analysis
         self.settings = settings
+
+        self.pressure = self.analysis.u.coord('pressure').points
 
     def save_path(self, title):
         # TODO: docstring
@@ -43,7 +46,7 @@ class ShearPlotter:
                 plt.clf()
                 plt.title(title)
 
-                plt.scatter(res.X_pca[:, i], res.X_pca[:, j], c=kmeans_red.labels_)
+                plt.scatter(self.analysis.X_pca[:, i], self.analysis.X_pca[:, j], c=kmeans_red.labels_)
                 plt.savefig(self.save_path(title) + '.pdf')
 
         plt.close("all")
@@ -53,19 +56,20 @@ class ShearPlotter:
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
-        if res.max_mag is not None:
+        # TODO: denorm
+        if self.analysis.max_mag is not None:
             # De-normalize data. N.B. this takes into account any changes made by
-            # settings.FAVOUR_LOWER_TROP, as it uses res.max_mag to do de-norm, which is what's modified
+            # settings.FAVOUR_LOWER_TROP, as it uses self.analysis.max_mag to do de-norm, which is what's modified
             # in the first place.
-            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
+            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
         else:
-            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
 
@@ -155,8 +159,8 @@ class ShearPlotter:
         cmap = 'Reds'
         r = [[-24, 24], [0, 360]]
 
-        all_lat = res.X_latlon[0]
-        all_lon = res.X_latlon[1]
+        all_lat = self.analysis.X_latlon[0]
+        all_lon = self.analysis.X_latlon[1]
 
         fig = plt.figure(figsize=cm_to_inch(15, 5))
         ax = plt.axes(projection=ccrs.PlateCarree())
@@ -193,17 +197,18 @@ class ShearPlotter:
 
         clusters_to_disp = list(range(n_clusters))
 
-        if res.max_mag is not None:
+        # TODO: denorm
+        if self.analysis.max_mag is not None:
             # De-normalize data.
-            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
+            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
         else:
-            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
@@ -213,8 +218,8 @@ class ShearPlotter:
         bins = (39, 192)
 
         hists_latlon = []
-        all_lat = res.X_latlon[0]
-        all_lon = res.X_latlon[1]
+        all_lat = self.analysis.X_latlon[0]
+        all_lon = self.analysis.X_latlon[1]
 
         title_fmt = 'PROFILES_GEOG_LOC_{}_{}_{}_{}_-{}_nclust-{}'
         title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
@@ -353,17 +358,18 @@ class ShearPlotter:
 
     def plot_profiles_seasonal_geog_loc(self, use_pca, filt, norm, seed, res, disp_res):
         # TODO: docstring
-        if res.max_mag is not None:
+        # TODO: denorm
+        if self.analysis.max_mag is not None:
             # De-normalize data.
-            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
+            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
         else:
-            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         for season_name, season in [('son', self.analysis.son),
                                     ('djf', self.analysis.djf),
@@ -401,8 +407,8 @@ class ShearPlotter:
                     no_data = True
                     break
                 # Get original samples based on how they've been classified.
-                lat = res.X_latlon[0]
-                lon = res.X_latlon[1]
+                lat = self.analysis.X_latlon[0]
+                lon = self.analysis.X_latlon[1]
                 cluster_lat = lat[keep]
                 cluster_lon = lon[keep]
 
@@ -506,17 +512,18 @@ class ShearPlotter:
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
-        if res.max_mag is not None:
+        # TODO: denorm
+        if self.analysis.max_mag is not None:
             # De-normalize data.
-            norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-            mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
+            norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
             rot = np.arctan2(norm_v, norm_u)
             all_u = mag * np.cos(rot)
             all_v = mag * np.sin(rot)
         else:
-            all_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-            all_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+            all_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+            all_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
 
         abs_max = max(np.abs([all_u.min(), all_u.max(), all_v.min(), all_v.max()]))
         abs_max = 20
@@ -606,7 +613,7 @@ class ShearPlotter:
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
-        vels = res.orig_X
+        vels = self.analysis.orig_X
         u = vels[:, :self.settings.NUM_PRESSURE_LEVELS]
         v = vels[:, self.settings.NUM_PRESSURE_LEVELS:]
 
@@ -641,7 +648,7 @@ class ShearPlotter:
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
         title = title_fmt.format(loc, use_pca, filt, norm, seed, n_pca_components, n_clusters)
 
-        vels = res.X
+        vels = self.analysis.X
         u = vels[:, :self.settings.NUM_PRESSURE_LEVELS]
         v = vels[:, self.settings.NUM_PRESSURE_LEVELS:]
 
@@ -703,8 +710,8 @@ class ShearPlotter:
         bins = (39, 192)
         r = [[-24, 24], [0, 360]]
 
-        all_lat = res.X_latlon[0]
-        all_lon = res.X_latlon[1]
+        all_lat = self.analysis.X_latlon[0]
+        all_lon = self.analysis.X_latlon[1]
         for cluster_index in range(n_clusters):
             keep = kmeans_red.labels_ == cluster_index
 
@@ -759,16 +766,16 @@ class ShearPlotter:
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
-        for i in range(0, res.X.shape[0], int(res.X.shape[0] / 20)):
+        for i in range(0, self.analysis.X.shape[0], int(self.analysis.X.shape[0] / 20)):
             title_fmt = 'PCA_RED_{}_{}_{}_{}_-{}_nclust-{}_prof-{}'
             title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters, i)
-            profile = res.X[i]
-            pca_comp = res.X_pca[i].copy()
+            profile = self.analysis.X[i]
+            pca_comp = self.analysis.X_pca[i].copy()
             pca_comp[n_pca_components:] = 0
             plt.clf()
             plt.plot(profile[:self.settings.NUM_PRESSURE_LEVELS], pressure, 'b-')
             plt.plot(profile[self.settings.NUM_PRESSURE_LEVELS:], pressure, 'r-')
-            red_profile = res.pca.inverse_transform(pca_comp)
+            red_profile = self.analysis.pca.inverse_transform(pca_comp)
             plt.plot(red_profile[:self.settings.NUM_PRESSURE_LEVELS], pressure, 'b--')
             plt.plot(red_profile[self.settings.NUM_PRESSURE_LEVELS:], pressure, 'r--')
 
@@ -781,9 +788,9 @@ class ShearPlotter:
         # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
 
-        for pca_index in range(res.pca.n_components):
-            sample = res.pca.components_[pca_index]
-            evr = res.pca.explained_variance_ratio_[pca_index]
+        for pca_index in range(self.analysis.pca.n_components):
+            sample = self.analysis.pca.components_[pca_index]
+            evr = self.analysis.pca.explained_variance_ratio_[pca_index]
 
             title_fmt = 'PCA_PROFILE_{}_{}_{}_pi-{}_evr-{}'
             title = title_fmt.format(use_pca, filt, norm, pca_index, evr)
@@ -804,6 +811,7 @@ class ShearPlotter:
 
     def plot_seven_pca_profiles(self, use_pca, filt, norm, res):
         # TODO: docstring
+        # TODO: make plot_n_pca_profiles.
         pressure = self.analysis.u.coord('pressure').points
 
         fig, axes = plt.subplots(1, 7, sharey=True, figsize=cm_to_inch(15, 5))
@@ -818,7 +826,7 @@ class ShearPlotter:
             if pca_index == 3:
                 ax.set_xlabel('PCA magnitude')
 
-            sample = res.pca.components_[pca_index]
+            sample = self.analysis.pca.components_[pca_index]
 
             pca_u, pca_v = sample[:self.settings.NUM_PRESSURE_LEVELS], sample[self.settings.NUM_PRESSURE_LEVELS:]
             ax.plot(pca_u, pressure, 'b-', label="u'")
@@ -851,7 +859,7 @@ class ShearPlotter:
             if pca_index == 1:
                 ax.set_xlabel('          PCA magnitude')
 
-            sample = res.pca.components_[pca_index]
+            sample = self.analysis.pca.components_[pca_index]
 
             pca_u, pca_v = sample[:self.settings.NUM_PRESSURE_LEVELS], sample[self.settings.NUM_PRESSURE_LEVELS:]
             ax.plot(pca_u, pressure, 'b-', label='u')
@@ -869,55 +877,36 @@ class ShearPlotter:
 
         plt.close("all")
 
-    def plot_scores(self, use_pca, filt, norm, res):
-        # TODO: docstring
-        title_fmt = 'KMEANS_SCORES_{}_{}_{}'
-        title = title_fmt.format(use_pca, filt, norm)
+    @staticmethod
+    def plot_scores(analyser, scores):
+        """Plot the kmeans scores for each cluster.
+
+        Simple line plot: score vs #clusters (score is a -ve value).
+        This is a measure of the inter-cluster variability. You would expect it to go down in
+        magnitude as the number of clusters increases, and the 'optimum' number of clusters
+        can be seen by looking for a so-called elbow."""
+        title = 'KMEANS_SCORES'
         plt.figure(title)
         plt.clf()
-        scores = []
-        for n_clusters in self.settings.CLUSTERS:
-            disp_res = res.disp_res[(n_clusters, self.settings.RANDOM_SEEDS[0])]
-            n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
-
-            # score(...) gives the -(inertia):
-            # http://scikit-learn.org/stable/modules/clustering.html#k-means
-            # This is the "within-cluster sum of squares".
-            scores.append(kmeans_red.score(res.X_pca[:, :n_pca_components]))
-
-        plt.plot(self.settings.CLUSTERS, scores)
+        plt.plot(analyser.settings.CLUSTERS, scores)
         plt.xlabel('# clusters')
         plt.ylabel('score')
 
-        plt.savefig(self.save_path(title) + '.pdf')
+        plt.savefig(analyser.file_path(title) + '.pdf')
         plt.close("all")
-
-    def display_cluster_cluster_dist(self, use_pca, filt, norm, seed, res, disp_res):
-        # TODO: docstring
-        n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
-        title_fmt = 'CLUST_CLUST_DIST_{}_{}_{}_{}_-{}_nclust-{}'
-        title = title_fmt.format(use_pca, filt, norm, seed, n_pca_components, n_clusters)
-        np_filename = self.save_path(title) + '.np'
-
-        ones = np.ones((n_clusters, n_clusters))
-        max_dist_index = np.unravel_index(np.argmax(cc_dist), ones.shape)
-        min_dist_index = np.unravel_index(np.argmin(cc_dist), ones.shape)
-        logger.debug('max_dist: {}, {}'.format(max_dist_index, cc_dist.max()))
-        logger.debug('min_dist: {}, {}'.format(min_dist_index, cc_dist.min()))
-
-        cc_dist.dump(np_filename)
 
     def plot_nearest_furthest_profiles(self, use_pca, filt, norm, seed, res, disp_res):
         # TODO: docstring
         pressure = self.analysis.u.coord('pressure').points
         n_pca_components, n_clusters, kmeans_red, cc_dist = disp_res
 
+        # TODO: denorm
         # De-normalize data. N.B. this takes into account any changes made by
-        # settings.FAVOUR_LOWER_TROP, as it uses res.max_mag to do de-norm, which is what's modified
+        # settings.FAVOUR_LOWER_TROP, as it uses self.analysis.max_mag to do de-norm, which is what's modified
         # in the first place.
-        norm_u = res.X[:, :self.settings.NUM_PRESSURE_LEVELS]
-        norm_v = res.X[:, self.settings.NUM_PRESSURE_LEVELS:]
-        mag = np.sqrt(norm_u**2 + norm_v**2) * res.max_mag[None, :]
+        norm_u = self.analysis.X[:, :self.settings.NUM_PRESSURE_LEVELS]
+        norm_v = self.analysis.X[:, self.settings.NUM_PRESSURE_LEVELS:]
+        mag = np.sqrt(norm_u**2 + norm_v**2) * self.analysis.max_mag[None, :]
         rot = np.arctan2(norm_v, norm_u)
         all_u = mag * np.cos(rot)
         all_v = mag * np.sin(rot)

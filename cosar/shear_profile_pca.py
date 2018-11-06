@@ -4,6 +4,7 @@ from logging import getLogger
 
 import pandas as pd
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 
 from omnium import Analyser
 
@@ -44,25 +45,20 @@ class ShearProfilePca(Analyser):
     output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = ['{output_dir}/profiles_pca.hdf', '{output_dir}/pca_n_pca_components.pkl']
 
-    norm = 'magrot'
-
     def load(self):
         logger.debug('override load')
-        self.df = pd.read_hdf(self.task.filenames[0], 'normalized_profile')
+        self.df_norm = pd.read_hdf(self.task.filenames[0], 'normalized_profile')
 
     def run(self):
-        df = self.df
-        X_normalized = df.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
+        self.X_normalized = self.df_norm.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
-        X_pca, pca, n_pca_components = _calc_pca(self.settings, X_normalized)
+        X_pca, pca, n_pca_components = _calc_pca(self.settings, self.X_normalized)
         self.pca_n_pca_components = (pca, n_pca_components)
-        columns = self.df.columns[:-2]  # lat/lon are copied over separately.
-        self.pca_df = pd.DataFrame(index=self.df.index, columns=columns, data=X_pca)
-        self.pca_df['lat'] = self.df['lat']
-        self.pca_df['lon'] = self.df['lon']
+        columns = self.df_norm.columns[:-2]  # lat/lon are copied over separately.
+        self.pca_df = pd.DataFrame(index=self.df_norm.index, columns=columns, data=X_pca)
+        self.pca_df['lat'] = self.df_norm['lat']
+        self.pca_df['lon'] = self.df_norm['lon']
 
     def save(self, state=None, suite=None):
         self.pca_df.to_hdf(self.task.output_filenames[0], 'pca_profile')
-        dirname = os.path.dirname(self.task.output_filenames[0])
-        pca_pickle_path = os.path.join(dirname, 'pca_n_pca_components.pkl')
-        pickle.dump(self.pca_n_pca_components, open(pca_pickle_path, 'wb'))
+        pickle.dump(self.pca_n_pca_components, open(self.task.output_filenames[1], 'wb'))
