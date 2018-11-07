@@ -14,10 +14,12 @@ logger = getLogger('cosar.spa')
 class ShearProfileAnalyse(Analyser):
     """Carry out the final stages of the analysis.
 
-    Includes:
     * work out magnitude denormalized samples
     * some seasonal indices
     * land sea stats for profiles
+
+    Outputs the denormalized magnitude samples, and the seasoanl info.
+    Displays (writes to a file) the land sea stats.
     """
     analysis_name = 'shear_profile_analyse'
     multi_file = True
