@@ -96,9 +96,3 @@ class ShearProfilePlot(Analyser):
                 plotter.plot_nearest_furthest_profiles()
                 plotter.plot_RWP_temporal_histograms()
                 plotter.plot_pca_red()
-
-                if self.settings.PLOT_EGU_FIGS:
-                    # TODO: decide what to do about these.
-                    # plot_pca_cluster_results()
-                    # plot_pca_red(self.u)
-                    pass
