@@ -1,10 +1,8 @@
-import os
 import pickle
 from logging import getLogger
 
 import pandas as pd
 from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
 
 from omnium import Analyser
 
