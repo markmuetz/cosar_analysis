@@ -12,7 +12,15 @@ logger = getLogger('cosar.spkc')
 
 
 class ShearProfileKmeansCluster(Analyser):
-    # TODO: docstring
+    """Apply a KMeans clustering algorithm to the PCA data.
+
+    Uses the sklearn KMeans cluster class to cluster the samples into all numbers of clusters
+    defined in CLUSTERS. Additionally, for DETAILED_CLUSTER runs the algorithm with different
+    seed values.
+
+    Outputs the cluster labels for each (n_cluster, seed) combination as an HDF5 file, and
+    the scores as a dumped np array.
+    """
     analysis_name = 'shear_profile_kmeans_cluster'
     multi_file = True
 
