@@ -150,7 +150,7 @@ def main(kwargs):
         # Calculates kmeans based on reduced (first 2) components of PCA.
         kmeans_red = KMeans(n_clusters=n_clusters, random_state=0) \
             .fit(X_new[:, :n_pca_components])
-        # TODO: Not quite right.
+        # Not quite right.
         logger.debug(np.histogram(kmeans_red.labels_, bins=n_clusters - 1))
 
         try:

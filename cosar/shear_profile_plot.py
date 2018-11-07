@@ -75,9 +75,12 @@ class ShearProfilePlot(Analyser):
             f.write('Finished')
 
     def display_results(self):
+        # Figures.
+        FigPlotter.figplot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
+
+        # Extras.
         FigPlotter.display_veering_backing(self.u, self.v, self)
         FigPlotter.plot_scores(self.scores, self)
-        FigPlotter.plot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
 
         for n_clusters in self.settings.CLUSTERS:
             # N.B. loop not nec., but might be useful in future if some figs for each
@@ -90,16 +93,19 @@ class ShearProfilePlot(Analyser):
             for seed in seeds:
                 plotter = FigPlotter(self, self.settings, n_clusters, seed, self.n_pca_components)
 
+                # Figures.
+                plotter.figplot_profiles_geog_all()
+                plotter.figplot_all_RWPs()
+                plotter.figplot_hodo_wind_rose_geog_loc()
+                plotter.figplot_RWP_temporal_histograms()
+
+                # Extras.
                 plotter.plot_orig_level_hists()
                 plotter.plot_level_hists()
                 plotter.plot_profile_results()
                 plotter.plot_geog_loc()
                 plotter.plot_cluster_results()
-                plotter.plot_profiles_geog_all()
-                plotter.plot_profiles_geog_loc()
                 plotter.plot_wind_rose_hists()
                 plotter.plot_profiles_seasonal_geog_loc()
-                plotter.plot_all_profiles()
                 plotter.plot_nearest_furthest_profiles()
-                plotter.plot_RWP_temporal_histograms()
                 plotter.plot_pca_red()
