@@ -1,10 +1,9 @@
-import math
 import os
 from logging import getLogger
 
-import numpy as np
-
 import iris
+import math
+import numpy as np
 import pandas as pd
 
 from omnium import Analyser

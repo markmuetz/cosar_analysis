@@ -1,12 +1,11 @@
 import pickle
 from logging import getLogger
 
-import numpy as np
-
 import iris
+import numpy as np
 import pandas as pd
-from cosar.figure_plotting import FigPlotter
 
+from cosar.figure_plotting import FigPlotter
 from omnium import Analyser
 from omnium.utils import get_cube
 
