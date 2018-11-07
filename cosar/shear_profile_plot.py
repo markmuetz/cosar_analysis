@@ -54,7 +54,6 @@ class ShearProfilePlot(Analyser):
         self.X_pca = df_pca.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
         self.u = get_cube(self.cubes, 30, 201)
-        # TODO: check stash code.
         self.v = get_cube(self.cubes, 30, 202)
         self.max_mag = df_max_mag.values[:, 0]
 
