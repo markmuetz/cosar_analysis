@@ -33,6 +33,7 @@ class ShearProfilePlot(Analyser):
         '{input_dir}/denorm_mag.hdf',
         '{input_dir}/seasonal_info.hdf',
     ]
+    # Output all files to a figs dir.
     output_dir = 'omnium_output/{version_dir}/{expt}/figs'
     output_filenames = ['{output_dir}/shear_profile_plot.dummy']
 
@@ -69,6 +70,7 @@ class ShearProfilePlot(Analyser):
         pass
 
     def save(self, state=None, suite=None):
+        # Write to a dummy file to say that we're done.
         with open(self.task.output_filenames[0], 'w') as f:
             f.write('Finished')
 
@@ -78,6 +80,8 @@ class ShearProfilePlot(Analyser):
         FigPlotter.plot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
 
         for n_clusters in self.settings.CLUSTERS:
+            # N.B. loop not nec., but might be useful in future if some figs for each
+            # number of clusters are wanted.
             if n_clusters == self.settings.DETAILED_CLUSTER:
                 seeds = self.settings.RANDOM_SEEDS
             else:
