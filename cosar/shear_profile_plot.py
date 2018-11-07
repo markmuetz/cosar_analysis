@@ -40,7 +40,7 @@ class ShearProfilePlot(Analyser):
     def load(self):
         logger.debug('override load')
         self.df_filtered = pd.read_hdf(self.task.filenames[0])
-        self.df_normalized = pd.read_hdf(self.task.filenames[1], 'normalized_profile')
+        self.df_norm = pd.read_hdf(self.task.filenames[1], 'normalized_profile')
         df_max_mag = pd.read_hdf(self.task.filenames[1], 'max_mag')
         df_pca = pd.read_hdf(self.task.filenames[2])
         self.df_labels = pd.read_hdf(self.task.filenames[3], 'kmeans_labels')
@@ -51,11 +51,11 @@ class ShearProfilePlot(Analyser):
         self.df_seasonal_info = pd.read_hdf(self.task.filenames[8], 'seasonal_info')
 
         self.orig_X = self.df_filtered.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
-        self.X = self.df_normalized.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
+        self.X = self.df_norm.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.X_pca = df_pca.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
         self.u = get_cube(self.cubes, 30, 201)
-        # TODO: check code.
+        # TODO: check stash code.
         self.v = get_cube(self.cubes, 30, 202)
         self.max_mag = df_max_mag.values[:, 0]
 

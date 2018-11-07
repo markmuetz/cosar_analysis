@@ -182,11 +182,10 @@ class ShearProfileFilter(Analyser):
         pressure = self.u.coord('pressure').points
         columns = ['u{:.0f}_hPa'.format(p) for p in pressure] +\
                   ['v{:.0f}_hPa'.format(p) for p in pressure]
-        # TODO: rename.
-        self.df = pd.DataFrame(index=dates, columns=columns,
-                               data=np.concatenate([u_samples, v_samples], axis=1))
-        self.df['lat'] = lat
-        self.df['lon'] = lon
+        self.df_filtered = pd.DataFrame(index=dates, columns=columns,
+                                        data=np.concatenate([u_samples, v_samples], axis=1))
+        self.df_filtered['lat'] = lat
+        self.df_filtered['lon'] = lon
 
     def save(self, state=None, suite=None):
-        self.df.to_hdf(self.task.output_filenames[0], 'filtered_profile')
+        self.df_filtered.to_hdf(self.task.output_filenames[0], 'filtered_profile')

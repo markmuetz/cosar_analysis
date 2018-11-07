@@ -33,7 +33,7 @@ class ShearProfileKmeansCluster(Analyser):
 
         self.kmeans_objs = {}
         self.cluster_cluster_dists = {}
-        self.df_labels = pd.DataFrame(index=self.df.index)
+        self.df_labels = pd.DataFrame(index=self.df_pca.index)
         scores = []
 
         for n_clusters in self.settings.CLUSTERS:

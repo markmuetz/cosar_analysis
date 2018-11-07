@@ -53,10 +53,10 @@ class ShearProfilePca(Analyser):
         X_pca, pca, n_pca_components = _calc_pca(self.settings, self.X_normalized)
         self.pca_n_pca_components = (pca, n_pca_components)
         columns = self.df_norm.columns[:-2]  # lat/lon are copied over separately.
-        self.pca_df = pd.DataFrame(index=self.df_norm.index, columns=columns, data=X_pca)
-        self.pca_df['lat'] = self.df_norm['lat']
-        self.pca_df['lon'] = self.df_norm['lon']
+        self.df_pca = pd.DataFrame(index=self.df_norm.index, columns=columns, data=X_pca)
+        self.df_pca['lat'] = self.df_norm['lat']
+        self.df_pca['lon'] = self.df_norm['lon']
 
     def save(self, state=None, suite=None):
-        self.pca_df.to_hdf(self.task.output_filenames[0], 'pca_profile')
+        self.df_pca.to_hdf(self.task.output_filenames[0], 'pca_profile')
         pickle.dump(self.pca_n_pca_components, open(self.task.output_filenames[1], 'wb'))

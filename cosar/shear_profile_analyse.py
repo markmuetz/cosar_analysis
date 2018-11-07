@@ -37,9 +37,9 @@ class ShearProfileAnalyse(Analyser):
     def load(self):
         logger.debug('override load')
         self.df_filtered = pd.read_hdf(self.task.filenames[0])
-        self.df_normalized = pd.read_hdf(self.task.filenames[1])
+        self.df_norm = pd.read_hdf(self.task.filenames[1])
         df_max_mag = pd.read_hdf(self.task.filenames[1], 'max_mag')
-        self.X = self.df_normalized.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
+        self.X = self.df_norm.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.df_labels = pd.read_hdf(self.task.filenames[2], 'kmeans_labels')
 
         self.max_mag = df_max_mag.values[:, 0]

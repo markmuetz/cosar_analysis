@@ -85,12 +85,13 @@ class ShearProfileNormalize(Analyser):
                 X = X_magrot
 
         columns = self.df_filtered.columns[:-2]  # lat/lon are copied over separately.
-        self.norm_df = pd.DataFrame(index=self.df_filtered.index, columns=columns, data=X)
-        self.norm_df['lat'] = self.df_filtered['lat']
-        self.norm_df['lon'] = self.df_filtered['lon']
-        self.norm_df['rot_at_level'] = rot_at_level
-        self.max_mag_df = pd.DataFrame(data=max_mag)
+        self.df_norm = pd.DataFrame(index=self.df_filtered.index, columns=columns, data=X)
+        self.df_norm['lat'] = self.df_filtered['lat']
+        self.df_norm['lon'] = self.df_filtered['lon']
+        self.df_norm['rot_at_level'] = rot_at_level
+        self.df_max_mag = pd.DataFrame(data=max_mag)
 
     def save(self, state=None, suite=None):
-        self.norm_df.to_hdf(self.task.output_filenames[0], 'normalized_profile')
-        self.max_mag_df.to_hdf(self.task.output_filenames[0], 'max_mag')
+        # Both saved into same HDF file with different key.
+        self.df_norm.to_hdf(self.task.output_filenames[0], 'normalized_profile')
+        self.df_max_mag.to_hdf(self.task.output_filenames[0], 'max_mag')
