@@ -5,8 +5,6 @@ import numpy as np
 
 import iris
 import pandas as pd
-from cosar.egu_poster_figs import (plot_pca_cluster_results,
-                                   plot_pca_red, plot_gcm_for_schematic)
 from cosar.figure_plotting import FigPlotter
 
 from omnium import Analyser
@@ -72,9 +70,6 @@ class ShearProfilePlot(Analyser):
             f.write('Finished')
 
     def display_results(self):
-        if self.settings.PLOT_EGU_FIGS:
-            plot_gcm_for_schematic()
-
         FigPlotter.display_veering_backing(self.u, self.v, self.settings)
         FigPlotter.plot_scores(self.scores, self)
         FigPlotter.plot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)

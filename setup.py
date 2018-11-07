@@ -25,7 +25,8 @@ setup(
     author_email='m.muetzelfeldt@pgr.reading.ac.uk',
     maintainer='Mark Muetzelfeldt',
     maintainer_email='m.muetzelfeldt@pgr.reading.ac.uk',
-    packages=['cosar', 'cosar.scripts' ],
+    # N.B. historical code *not* included.
+    packages=['cosar'],
     scripts=[ ],
     python_requires='>=3.6',
     install_requires=[
@@ -39,7 +40,7 @@ setup(
         # 'pytables',
         'scikit-learn',
     ],
-    package_data={ },
+    package_data={},
     url='https://github.com/markmuetz/cosar_analysis',
     classifiers=[
         'Environment :: Console',
