@@ -34,7 +34,14 @@ def _calc_pca(settings, X, n_pca_components=None, expl_var_min=None):
 
 
 class ShearProfilePca(Analyser):
-    # TODO: docstring
+    """Applies PCA to the normalized profiles.
+
+    Uses sklearn PCA to work out PCs for the given samples (combination of u and v profiles.
+    If N_PCA_COMPONENTS is set, it will use/store this many PCs for future use (actually stores them
+    all and records this number), if EXP_VAR_MIN set then it calculates how many PCs are needed
+    to explain at least that much variance, and uses this for future calculations.
+
+    Outputs the PCA components, and a pickle of the PCA() object."""
     analysis_name = 'shear_profile_pca'
     single_file = True
 
@@ -50,7 +57,9 @@ class ShearProfilePca(Analyser):
     def run(self):
         self.X_normalized = self.df_norm.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
 
-        X_pca, pca, n_pca_components = _calc_pca(self.settings, self.X_normalized)
+        X_pca, pca, n_pca_components = _calc_pca(self.settings, self.X_normalized,
+                                                  self.settings.N_PCA_COMPONENTS,
+                                                  self.settings.EXP_VAR_MIN)
         self.pca_n_pca_components = (pca, n_pca_components)
         # lat/lon are copied over separately, ignore rot_at_level.
         columns = self.df_norm.columns[:-3]
