@@ -28,7 +28,7 @@ class ShearProfileAnalyse(Analyser):
         '{input_dir}/profiles_normalized.hdf',
         '{input_dir}/kmeans_labels.hdf',
     ]
-    output_dir = 'omnium_output/{version_dir}/{expt}/figs'
+    output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = [
         '{output_dir}/denorm_mag.hdf',
         '{output_dir}/seasonal_info.hdf']
@@ -36,7 +36,7 @@ class ShearProfileAnalyse(Analyser):
     def load(self):
         logger.debug('override load')
         self.df_filtered = pd.read_hdf(self.task.filenames[0])
-        self.df_norm = pd.read_hdf(self.task.filenames[1])
+        self.df_norm = pd.read_hdf(self.task.filenames[1], 'normalized_profile')
         df_max_mag = pd.read_hdf(self.task.filenames[1], 'max_mag')
         self.X = self.df_norm.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.df_labels = pd.read_hdf(self.task.filenames[2], 'kmeans_labels')

@@ -52,7 +52,8 @@ class ShearProfilePca(Analyser):
 
         X_pca, pca, n_pca_components = _calc_pca(self.settings, self.X_normalized)
         self.pca_n_pca_components = (pca, n_pca_components)
-        columns = self.df_norm.columns[:-2]  # lat/lon are copied over separately.
+        # lat/lon are copied over separately, ignore rot_at_level.
+        columns = self.df_norm.columns[:-3]
         self.df_pca = pd.DataFrame(index=self.df_norm.index, columns=columns, data=X_pca)
         self.df_pca['lat'] = self.df_norm['lat']
         self.df_pca['lon'] = self.df_norm['lon']

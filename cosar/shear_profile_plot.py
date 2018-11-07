@@ -30,7 +30,7 @@ class ShearProfilePlot(Analyser):
         '{input_dir}/pca_n_pca_components.pkl',
         'share/data/history/{expt}/au197a.pc19880901.nc',
         '{input_dir}/scores.np',
-        '{input_dir}/denorm_data.hdf',
+        '{input_dir}/denorm_mag.hdf',
         '{input_dir}/seasonal_info.hdf',
     ]
     output_dir = 'omnium_output/{version_dir}/{expt}/figs'
@@ -61,6 +61,11 @@ class ShearProfilePlot(Analyser):
         self.all_u = self.df_denorm_mag.values[:, :self.settings.NUM_PRESSURE_LEVELS]
         self.all_v = self.df_denorm_mag.values[:, self.settings.NUM_PRESSURE_LEVELS:]
 
+        self.jja = self.df_seasonal_info['jja'].values
+        self.son = self.df_seasonal_info['son'].values
+        self.djf = self.df_seasonal_info['djf'].values
+        self.mam = self.df_seasonal_info['mam'].values
+
     def run(self):
         pass
 
@@ -69,7 +74,7 @@ class ShearProfilePlot(Analyser):
             f.write('Finished')
 
     def display_results(self):
-        FigPlotter.display_veering_backing(self.u, self.v, self.settings)
+        FigPlotter.display_veering_backing(self.u, self.v, self)
         FigPlotter.plot_scores(self.scores, self)
         FigPlotter.plot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
 

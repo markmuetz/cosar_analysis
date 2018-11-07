@@ -175,10 +175,10 @@ class FigPlotter:
 
         i.e. plots PC2 vs PC1, PC3 vs PC1..."""
         # Loop over all axes of PCA.
-        for i in range(1, self.analyser.X_pca.shape[1]):
+        for i in range(1, self.n_pca_components):
             for j in range(i):
-                title_fmt = 'CLUSTERS_nclust-{}_comp-({},{})'
-                title = title_fmt.format(self.n_clusters, i, j)
+                title_fmt = 'CLUSTERS_seed-{}_npca-{}_nclust-{}_comp-({},{})'
+                title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters, i, j)
                 plt.figure(title)
                 plt.clf()
                 plt.title(title)
@@ -205,8 +205,9 @@ class FigPlotter:
             v_p25, v_median, v_p75 = np.percentile(v, (25, 50, 75), axis=0)
 
             # Profile u/v plots.
-            title_fmt = 'PROFILES_nclust-{}_ci-{}_nprof-{}'
-            title = title_fmt.format(self.n_clusters, cluster_index, keep.sum())
+            title_fmt = 'PROFILES_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
+            title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
+                                     cluster_index, keep.sum())
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -304,7 +305,7 @@ class FigPlotter:
         # hist_min = np.min([h[0].min() for h in self.hists_lat_lon])
 
         xy_pos_map = {}
-        rot_at_level = self.analyser.df_normalized['rot_at_level']
+        rot_at_level = self.analyser.df_norm['rot_at_level']
 
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = self.labels == cluster_index
@@ -577,16 +578,16 @@ class FigPlotter:
                 ax.legend(loc=[0.86, 0.1])
 
         # Profile u/v plots.
-        title_fmt = 'ALL_PROFILES_npca-{}_nclust-{}'
-        title = title_fmt.format(self.n_pca_components, self.n_clusters)
+        title_fmt = 'ALL_PROFILES_seed-{}_npca-{}_nclust-{}'
+        title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
         plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
 
     def plot_orig_level_hists(self):
         # TODO: docstring
-        title_fmt = 'ORIG_LEVEL_HISTS_npca-{}_nclust-{}'
-        title = title_fmt.format(self.n_pca_components, self.n_clusters)
+        title_fmt = 'ORIG_LEVEL_HISTS_seed-{}_npca-{}_nclust-{}'
+        title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
 
         vels = self.analyser.orig_X
         u = vels[:, :self.settings.NUM_PRESSURE_LEVELS]
@@ -618,8 +619,8 @@ class FigPlotter:
 
     def plot_level_hists(self):
         # TODO: docstring
-        title_fmt = 'LEVEL_HISTS_npca-{}_nclust-{}'
-        title = title_fmt.format(self.n_pca_components, self.n_clusters)
+        title_fmt = 'LEVEL_HISTS_seed-{}_npca-{}_nclust-{}'
+        title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
 
         vels = self.analyser.X
         u = vels[:, :self.settings.NUM_PRESSURE_LEVELS]
@@ -648,11 +649,11 @@ class FigPlotter:
 
     def plot_wind_rose_hists(self):
         # TODO: docstring
-        rot_at_level = self.analyser.df_normalized['rot_at_level']
+        rot_at_level = self.analyser.df_norm['rot_at_level']
 
         for cluster_index in range(self.n_clusters):
-            title_fmt = 'WIND_ROSE_HIST_ci-{}_npca-{}_nclust-{}'
-            title = title_fmt.format(cluster_index, self.n_pca_components, self.n_clusters)
+            title_fmt = 'WIND_ROSE_HIST_ci-{}_seed-{}_npca-{}_nclust-{}'
+            title = title_fmt.format(self.seed, cluster_index, self.n_pca_components, self.n_clusters)
             keep = self.labels == cluster_index
             fig = plt.figure(figsize=(8, 8))
             ax = fig.add_axes([.1, .1, .8, .8], polar=True)
@@ -809,9 +810,9 @@ class FigPlotter:
         """Plots temporal histograms of RWP distns over the course of a year"""
         logger.debug('RWP Temporal hists')
 
-        month = self.analyser.df_filtered['month']
-        year_of_sim = self.analyser.df_filtered['year_of_sim']
-        lat = self.analyser.df_filtered['lat']
+        month = self.analyser.df_seasonal_info['month'].values
+        year_of_sim = self.analyser.df_seasonal_info['year_of_sim'].values
+        lat = self.analyser.df_filtered['lat'].values
 
         bins = np.linspace(-0.5, 11.5, 13)
         bin_centres = (bins[:-1] + bins[1:]) / 2
