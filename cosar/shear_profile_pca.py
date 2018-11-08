@@ -11,8 +11,6 @@ logger = getLogger('cosar.spp')
 
 def _calc_pca(settings, X, n_pca_components=None, expl_var_min=None):
     """Calcs PCs, either with n_pca_components or by explaining over expl_var_min of the var."""
-    if not expl_var_min:
-        expl_var_min = settings.EXPL_VAR_MIN
     pca = PCA(n_components=X.shape[1])
     pca.fit(X)
 
@@ -59,7 +57,7 @@ class ShearProfilePca(Analyser):
 
         X_pca, pca, n_pca_components = _calc_pca(self.settings, self.X_normalized,
                                                   self.settings.N_PCA_COMPONENTS,
-                                                  self.settings.EXP_VAR_MIN)
+                                                  self.settings.EXPL_VAR_MIN)
         self.pca_n_pca_components = (pca, n_pca_components)
         # lat/lon are copied over separately, ignore rot_at_level.
         columns = self.df_norm.columns[:-3]
