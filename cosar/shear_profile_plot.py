@@ -99,13 +99,15 @@ class ShearProfilePlot(Analyser):
                 plotter.figplot_hodo_wind_rose_geog_loc()
                 plotter.figplot_RWP_temporal_histograms()
 
-                # Extras.
-                plotter.plot_orig_level_hists()
-                plotter.plot_level_hists()
-                plotter.plot_profile_results()
-                plotter.plot_geog_loc()
-                plotter.plot_cluster_results()
-                plotter.plot_wind_rose_hists()
-                plotter.plot_profiles_seasonal_geog_loc()
-                plotter.plot_nearest_furthest_profiles()
-                plotter.plot_pca_red()
+                if seed == seeds[0]:
+                    # Extras. These are quite time consuming to run, and I don't need to do
+                    # seed to seed comparisons on them, so only run for first seed.
+                    plotter.plot_orig_level_hists()
+                    plotter.plot_level_hists()
+                    plotter.plot_profile_results()
+                    plotter.plot_geog_loc()
+                    plotter.plot_cluster_results()
+                    plotter.plot_wind_rose_hists()
+                    plotter.plot_profiles_seasonal_geog_loc()
+                    plotter.plot_nearest_furthest_profiles()
+                    plotter.plot_pca_red()
