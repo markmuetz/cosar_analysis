@@ -169,19 +169,21 @@ def _apply_filters(u_red_iter, v_red_iter, cape_red_iter, lat, lon, dp, filter_o
         keep = last_keep
         all_filters = ''
 
-        # Apply filters one after the other. N.B each filter is independent - it acts on the data
-        # irrespective of what other filters have already done.
-        if filter == 'cape':
-            keep = cape_slice.data.flatten() > settings.CAPE_THRESH
-        elif filter == 'shear':
-            # Take max along pressure-axis.
-            shear = _calc_shear(u_slice, v_slice, dp)
-            # Only consider shears up to threshold.
-            max_profile_shear = shear[shear_pressure_thresh_index:].max(axis=0)
-            keep = max_profile_shear.flatten() > max_profile_shear_percentile
+        # N.B. filter is a Python keyword, use cosar_filter to distinguish.
+        for cosar_filter in filter_on:
+            # Apply filters one after the other. N.B each filter is independent - it acts on the
+            # data irrespective of what other filters have already done.
+            if cosar_filter == 'cape':
+                keep = cape_slice.data.flatten() > settings.CAPE_THRESH
+            elif cosar_filter == 'shear':
+                # Take max along pressure-axis.
+                shear = _calc_shear(u_slice, v_slice, dp)
+                # Only consider shears up to threshold.
+                max_profile_shear = shear[shear_pressure_thresh_index:].max(axis=0)
+                keep = max_profile_shear.flatten() > max_profile_shear_percentile
 
-        keep &= last_keep
-        last_keep = keep
+            keep &= last_keep
+            last_keep = keep
 
         dates.extend([u_slice.coord('time').points[0]] * keep.sum())
         all_u_samples.append(u_samples[keep])
