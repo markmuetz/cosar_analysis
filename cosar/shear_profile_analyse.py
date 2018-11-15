@@ -140,7 +140,7 @@ class ShearProfileAnalyse(Analyser):
         label_key = 'nc-{}_seed-{}'.format(n_clusters, seed)
         path = self.file_path('land_sea_percentages_nclust-{}_seed-{}.txt'.format(n_clusters, seed))
         with open(path, 'w') as f:
-            f.write('RWP, land %, sea %\n')
+            f.write('RWP, land %, sea %, # prof\n')
             for i in range(10):
                 keep = self.df_labels[label_key].values == i
                 cluster_lat = all_lat[keep]
@@ -149,7 +149,10 @@ class ShearProfileAnalyse(Analyser):
                                                 bins=bins, range=geog_range)
                 land_frac = hist[land_mask_tropics].sum() / hist.sum()
                 sea_frac = hist[~land_mask_tropics].sum() / hist.sum()
-                f.write('C{}, {:.2f}, {:.2f}\n'.format(i + 1, land_frac * 100, sea_frac * 100))
+                f.write('C{}, {:.2f}, {:.2f}, {}\n'.format(i + 1,
+                                                           land_frac * 100,
+                                                           sea_frac * 100,
+                                                           keep.sum()))
 
     def save(self, state=None, suite=None):
         self.df_denorm_mag.to_hdf(self.task.output_filenames[0], 'denorm_mag')
