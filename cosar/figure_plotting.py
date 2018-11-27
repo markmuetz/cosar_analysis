@@ -114,7 +114,7 @@ class FigPlotter:
             ax = axes[pca_index]
             ax.set_yticks([1000, 800, 600, 400, 200, 50])
 
-            ax.set_title('({})'.format(FigPlotter.letters[pca_index]))
+            ax.set_title('({})'.format(FigPlotter.letters[pca_index]), fontsize=10, loc='left')
             # ax.set_title('PC{}'.format(pca_index + 1))
             if pca_index == 0:
                 ax.set_ylabel('pressure (hPa)')
@@ -196,14 +196,19 @@ class FigPlotter:
 
         for ax_index, cluster_index in enumerate(clusters_to_disp):
             keep = self.labels == cluster_index
+            letter = FigPlotter.letters[cluster_index]
 
             ax1 = axes1[ax_index]
             ax2 = axes2[ax_index]
             ax3 = axes3[ax_index]
 
+            ax1.set_title('({}.i)'.format(letter), fontsize=8, y=0.90, loc='left')
+            ax2.set_title('({}.ii)'.format(letter), fontsize=8, y=1.02, loc='left')
+            ax3.set_title('({}.iii)'.format(letter), fontsize=8, y=0.90, loc='left')
+
             ax2.set_theta_direction(-1)
             ax2.set_theta_zero_location('N')
-            ax2.set_xticklabels(['\nN'])
+            ax2.set_xticklabels([])
             # ax2.set_rlabel_position(90)
 
             wind_rose_bins = np.linspace(-np.pi, np.pi, 9)
@@ -212,6 +217,7 @@ class FigPlotter:
             bin_centres = (wind_rose_bins[:-1] + wind_rose_bins[1:]) / 2
             # ax.bar(15 * np.pi/8, 10,  np.pi / 4, color='blue')
             percent_total = 0
+            ax2.set_rlim(0, 50)
             for val, ang in zip(hist[0], bin_centres):
                 ax2.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
                 percent_total += val / rot_at_level[keep].shape[0] * 100
@@ -225,36 +231,42 @@ class FigPlotter:
 
             ax1.axhline(0, color='lightgrey')
             ax1.axvline(0, color='lightgrey')
-            ax1.plot(u_median[:10], v_median[:10], 'k--')
-            ax1.plot(u_median[10:], v_median[10:], 'k-')
+            # ax1.plot(u_median[:10], v_median[:10], 'k--')
+            # ax1.plot(u_median[10:], v_median[10:], 'k-')
+            ax1.plot(u_median[19], v_median[19], 'o', color='grey')
+            ax1.plot(u_median[14], v_median[14], '^', color='grey')
+            ax1.plot(u_median[9], v_median[9], 's', color='grey')
+            ax1.plot(u_median[4], v_median[4], 'x', color='grey')
+            ax1.plot(u_median, v_median, 'k-')
 
             ax1.text(0.05, 0.01, 'C{}'.format(cluster_index + 1),
                      verticalalignment='bottom', horizontalalignment='left',
                      transform=ax1.transAxes,
-                     color='black')
+                     color='black', fontsize=8)
 
-            for i in range(len(u_median)):
-                u = u_median[i]
-                v = v_median[i]
-                # ax1.plot(u, v, 'k+')
+            if False:
+                for i in range(len(u_median)):
+                    u = u_median[i]
+                    v = v_median[i]
+                    # ax1.plot(u, v, 'k+')
 
-                if cluster_index in xy_pos_map:
-                    xy_pos = xy_pos_map[cluster_index][i]
-                else:
-                    xy_pos = (-2, 2)
+                    if cluster_index in xy_pos_map:
+                        xy_pos = xy_pos_map[cluster_index][i]
+                    else:
+                        xy_pos = (-2, 2)
 
-                if i == 0 or i == len(u_median) - 1:
-                    msg = 'Pressure at level {}: {}'.format(self.settings.NUM_PRESSURE_LEVELS - i,
-                                                            self.pressure[i])
-                    logger.debug(msg)
-                    ax1.annotate('{}'.format(self.settings.NUM_PRESSURE_LEVELS - i), xy=(u, v),
-                                 xytext=xy_pos,
-                                 textcoords='offset points')
+                    if i == 0 or i == len(u_median) - 1:
+                        msg = 'Pressure at level {}: {}'.format(self.settings.NUM_PRESSURE_LEVELS - i,
+                                                                self.pressure[i])
+                        logger.debug(msg)
+                        ax1.annotate('{}'.format(self.settings.NUM_PRESSURE_LEVELS - i), xy=(u, v),
+                                     xytext=xy_pos,
+                                     textcoords='offset points')
             ax1.set_xlim((-10, 25))
             ax1.set_ylim((-10, 10))
 
             if ax_index == len(clusters_to_disp) // 2:
-                ax1.set_ylabel("v' (m s$^{-1}$)")
+                ax1.set_ylabel(' ' * 18 + "v' (m s$^{-1}$)")
 
             ax3.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
             ax3.yaxis.tick_right()
@@ -314,15 +326,15 @@ class FigPlotter:
 
             ax.set_yticks([1000, 800, 600, 400, 200, 50])
 
-            ax.plot(u_p10, self.pressure, 'b:')
+            ax.plot(u_median, self.pressure, 'b-', label="u'")
+            ax.plot(v_median, self.pressure, 'r-', label="v'")
+            ax.plot(u_p10, self.pressure, 'b:', label="u' 90th")
             ax.plot(u_p90, self.pressure, 'b:')
-            ax.plot(u_median, self.pressure, 'b-', label='u')
 
-            ax.plot(v_p10, self.pressure, 'r:')
+            ax.plot(v_p10, self.pressure, 'r:', label="u' 90th")
             ax.plot(v_p90, self.pressure, 'r:')
-            ax.plot(v_median, self.pressure, 'r-', label='v')
 
-            ax.set_xlim((-25, 25))
+            ax.set_xlim((-27, 27))
             ax.set_ylim((self.pressure.max(), self.pressure.min()))
             ax.set_xticks([-20, 0, 20])
 
@@ -335,13 +347,14 @@ class FigPlotter:
 
             if cluster_index in [5]:
                 # HACK: This is a hacky way to position a label!
-                ax.set_ylabel('                                    pressure (hPa)')
-            ax.text(0.25, 0.1, 'C{}'.format(cluster_index + 1),
-                    verticalalignment='bottom', horizontalalignment='right',
+                ax.set_ylabel(' ' * 50 + 'pressure (hPa)')
+            ax.text(0.05, 0.1, 'C{}'.format(cluster_index + 1),
+                    verticalalignment='bottom', horizontalalignment='left',
                     transform=ax.transAxes,
-                    color='black', fontsize=15)
-            if cluster_index == 10:
-                ax.legend(loc=[0.86, 0.1])
+                    color='black', fontsize=10)
+            ax.set_title('({})'.format(FigPlotter.letters[cluster_index]), fontsize=10, loc='left')
+            if cluster_index == 4:
+                ax.legend(loc=[0.76, -0.19], fontsize=8)
 
         # Profile u/v plots.
         title_fmt = 'ALL_PROFILES_seed-{}_npca-{}_nclust-{}'
@@ -371,8 +384,13 @@ class FigPlotter:
         for i, ax in enumerate(axes.flatten()):
             # Plot the monthly bars.
             val, bin_edge = np.histogram(month[self.labels == i], bins=bins)
-            ax.set_title('C{}'.format(i + 1), y=0.97)
-            ax.bar(bin_centres, val / 5, color='silver')
+            # ax.set_title('C{}'.format(i + 1), y=0.97)
+            ax.text(0.5, 0.85, 'C{}'.format(i + 1),
+                    verticalalignment='bottom', horizontalalignment='left',
+                    transform=ax.transAxes,
+                    color='black', fontsize=10)
+            ax.set_title('({})'.format(FigPlotter.letters[i]), y=0.97, loc='left')
+            ax.bar(bin_centres, val / 5, color='silver', label='yearly avg.')
             if i in [4]:
                 ax.set_ylabel('number per year')
 
@@ -386,7 +404,10 @@ class FigPlotter:
             for y in range(5):
                 year_val, bin_edge = np.histogram(month[(self.labels == i) &
                                                         (year_of_sim == y)], bins=bins)
-                ax.plot(bin_centres, year_val, color='grey', label='C{}'.format(i + 1))
+                if y == 0:
+                    ax.plot(bin_centres, year_val, color='grey', label='indiv. year')
+                else:
+                    ax.plot(bin_centres, year_val, color='grey')
 
             # Plot the mean lat on different scale axis.
             ax2 = ax.twinx()
@@ -394,9 +415,13 @@ class FigPlotter:
             lat_variation = []
             for m in range(12):
                 lat_variation.append(lat[(self.labels == i) & (month == m)].mean())
-            ax2.plot(bin_centres, lat_variation, 'b--')
-            ax2.set_ylabel('lat', color='b')
+            ax2.plot(bin_centres, lat_variation, 'b--', label='lat.')
+            if i in [5]:
+                ax2.set_ylabel('latitude', color='b')
             ax2.tick_params('y', colors='b')
+            if i in [1]:
+                ax.legend(loc='left')
+                ax2.legend(loc='top right')
 
         plt.tight_layout()
         title = 'RWP_month_hist_{}'.format(self.seed)
