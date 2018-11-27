@@ -1,5 +1,6 @@
 import calendar
 from logging import getLogger
+import string
 
 import matplotlib
 import numpy as np
@@ -31,6 +32,8 @@ class FigPlotter:
     geog_domain = [[-24, 24], [0, 360]]
     # matplotlib colourmap to use.
     hist_cmap = 'Reds'
+    letters = string.ascii_lowercase
+
 
     def __init__(self, analyser, settings, n_clusters, seed, n_pca_components):
         self.analyser = analyser
@@ -110,7 +113,9 @@ class FigPlotter:
         for pca_index in range(n):
             ax = axes[pca_index]
             ax.set_yticks([1000, 800, 600, 400, 200, 50])
-            ax.set_title('PC{}'.format(pca_index + 1))
+
+            ax.set_title('({})'.format(FigPlotter.letters[pca_index]))
+            # ax.set_title('PC{}'.format(pca_index + 1))
             if pca_index == 0:
                 ax.set_ylabel('pressure (hPa)')
 
