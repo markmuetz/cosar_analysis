@@ -152,6 +152,13 @@ def _apply_filters(u_red_iter, v_red_iter, cape_red_iter, lat, lon, dp, filter_o
     dates = []
     all_filters = '_'.join(filter_on)
 
+    # Keep track of how many profiles are kept by each filter.
+    keep_stats = {}
+    for cosar_filter in filter_on:
+        keep_stats[cosar_filter] = 0
+    keep_stats['total'] = 0
+    num_samples = 0
+
     # Apply filters.
     for u_slice, v_slice, cape_slice in zip(u_red_iter, v_red_iter, cape_red_iter):
         time = u_slice.coord('time').points[0]
@@ -169,6 +176,7 @@ def _apply_filters(u_red_iter, v_red_iter, cape_red_iter, lat, lon, dp, filter_o
         keep = last_keep
         all_filters = ''
 
+        num_samples += len(u_samples)
         # N.B. filter is a Python keyword, use cosar_filter to distinguish.
         for cosar_filter in filter_on:
             # Apply filters one after the other. N.B each filter is independent - it acts on the
@@ -182,6 +190,7 @@ def _apply_filters(u_red_iter, v_red_iter, cape_red_iter, lat, lon, dp, filter_o
                 max_profile_shear = shear[shear_pressure_thresh_index:].max(axis=0)
                 keep = max_profile_shear.flatten() > max_profile_shear_percentile
 
+            keep_stats[cosar_filter] += keep.sum()
             keep &= last_keep
             last_keep = keep
 
@@ -190,6 +199,15 @@ def _apply_filters(u_red_iter, v_red_iter, cape_red_iter, lat, lon, dp, filter_o
         all_v_samples.append(v_samples[keep])
         all_lat.append(lat[keep])
         all_lon.append(lon[keep])
+        keep_stats['total'] += keep.sum()
+
+    for cosar_filter in filter_on:
+        percent_keep = keep_stats[cosar_filter] / num_samples * 100
+        logger.info('Filter {}: keep {:.2f} % profiles'.format(cosar_filter,
+                                                               percent_keep))
+    percent_keep = keep_stats['total'] / num_samples * 100
+    logger.info('Filter total: keep {:.2f} % profiles'.format(percent_keep))
+
     return all_filters, all_lat, all_lon, all_u_samples, all_v_samples, dates
 
 
