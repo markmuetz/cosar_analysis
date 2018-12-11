@@ -4,14 +4,14 @@ Running analysis
 This does not run all the analysis, as it does not run the filtering step.
 This is because the output from the climate model is quite large, and it seems sensible to start from the filtered profiles.
 
-The steps are given for v0.7.5.1 of omnium. If a different version is used, edit the `apps/omnium/rose-app.conf` file to reflect this.
+The steps are given for v0.8.0.0 of omnium. If a different version is used, edit the `apps/omnium/rose-app.conf` file to reflect this.
 First make sure you have setup omnium and cosar test directory, as described in docs/installation.rst.
 
 Then, download the data from figshare:
 
 ::
 
-    cd omnium_output/om_v0.11.1.0_cosar_v0.7.5.1_e889d0f4f8/P5Y_DP20/
+    cd omnium_output/om_v0.11.1.0_cosar_v0.8.0.0_e889d0f4f8/P5Y_DP20/
     wget https://ndownloader.figshare.com/files/13786355?private_link=2240e7527a9bb7681ffb -O profiles_filtered.hdf
     sha1sum profiles_filtered.hdf
     # Should give:
@@ -41,8 +41,8 @@ Now, run the analysis (bar the filtering step):
 To display full debug info, start each command with ```omnium -D run```.
 Logs can be seen in the `.omnium/logs/` dir.
 
-All output files will be saved in `omnium_output/om_v0.11.1.0_cosar_v0.7.5.1_e889d0f4f8/P5Y_DP20/`
-Figues will go into a subdir: `omnium_output/om_v0.11.1.0_cosar_v0.7.5.1_e889d0f4f8/P5Y_DP20/figs/`
+All output files will be saved in `omnium_output/om_v0.11.1.0_cosar_v0.8.0.0_e889d0f4f8/P5Y_DP20/`
+Figues will go into a subdir: `omnium_output/om_v0.11.1.0_cosar_v0.8.0.0_e889d0f4f8/P5Y_DP20/figs/`
 
 Settings are defined in the `shear_profile_settings.py` file.
 If different settings are to be used, they can be run with e.g. ```omnium run -s <settings_name>```.
