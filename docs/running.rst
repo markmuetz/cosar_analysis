@@ -4,8 +4,7 @@ Running analysis
 This does not run all the analysis, as it does not run the filtering step.
 This is because the output from the climate model is quite large, and it seems sensible to start from the filtered profiles.
 
-The steps are given for v0.7.5.1 of omnium. If a different version is used, edit the `
-
+The steps are given for v0.7.5.1 of omnium. If a different version is used, edit the `apps/omnium/rose-app.conf` file to reflect this.
 First make sure you have setup omnium and cosar test directory, as described in docs/installation.rst.
 
 Then, download the data from figshare:
