@@ -22,9 +22,9 @@ Setting up test directory
     omnium version
 
     # Download the directory skeleton
-    wget https://ndownloader.figshare.com/files/13786775?private_link=767f19dd1bbeeaddddb9 -O u-au197.tgz
-    tar xvf u-au197.tgz
-    cd u-au197
+    wget https://ndownloader.figshare.com/files/13787267?private_link=42910d882025717262b1 -O u-au197_v0.8.0.0.tgz
+    tar xvf u-au197_v0.8.0.0.tgz
+    cd u-au197_v0.8.0.0
 
     # Initialize the cosar anaisis package
     omnium suite-init -t run

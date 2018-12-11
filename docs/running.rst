@@ -46,3 +46,4 @@ Figues will go into a subdir: `omnium_output/om_v0.11.1.0_cosar_v0.8.0.0_e889d0f
 
 Settings are defined in the `shear_profile_settings.py` file.
 If different settings are to be used, they can be run with e.g. ```omnium run -s <settings_name>```.
+
