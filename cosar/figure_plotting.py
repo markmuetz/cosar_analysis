@@ -166,6 +166,7 @@ class FigPlotter:
         colorbar_ax = fig.add_axes([0.11, 0.14, 0.8, 0.02])
         cbar = plt.colorbar(img, cax=colorbar_ax, cmap=self.hist_cmap, orientation='horizontal')
         cbar.set_clim(1, self.full_hist.max())
+        cbar.set_label('number of profiles')
 
         plt.savefig(self._file_path(title) + '.pdf')
 
@@ -204,11 +205,12 @@ class FigPlotter:
 
             ax1.set_title('({}.i)'.format(letter), fontsize=8, y=0.90, loc='left')
             ax2.set_title('({}.ii)'.format(letter), fontsize=8, y=1.02, loc='left')
-            ax3.set_title('({}.iii)'.format(letter), fontsize=8, y=0.90, loc='left')
+            ax3.set_title('({}.iii)'.format(letter), fontsize=8, x=-0.05, y=0.90, loc='left')
 
             ax2.set_theta_direction(-1)
             ax2.set_theta_zero_location('N')
             ax2.set_xticklabels([])
+            ax2.set_yticklabels(['50 %'])
             # ax2.set_rlabel_position(90)
 
             wind_rose_bins = np.linspace(-np.pi, np.pi, 9)
@@ -299,6 +301,7 @@ class FigPlotter:
                             orientation='horizontal',
                             cmap=self.hist_cmap)
         cbar.set_clim(1, hist_max)
+        cbar.set_label('number of profiles')
 
         # plt.tight_layout()
         plt.savefig(self._file_path(title) + '.pdf')
@@ -331,7 +334,7 @@ class FigPlotter:
             ax.plot(u_p10, self.pressure, 'b:', label="u' 90th")
             ax.plot(u_p90, self.pressure, 'b:')
 
-            ax.plot(v_p10, self.pressure, 'r:', label="u' 90th")
+            ax.plot(v_p10, self.pressure, 'r:', label="v' 90th")
             ax.plot(v_p90, self.pressure, 'r:')
 
             ax.set_xlim((-27, 27))
