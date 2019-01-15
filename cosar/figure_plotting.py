@@ -204,8 +204,8 @@ class FigPlotter:
             ax3 = axes3[ax_index]
 
             ax1.set_title('({}.i)'.format(letter), fontsize=8, y=0.90, loc='left')
-            ax2.set_title('({}.ii)'.format(letter), fontsize=8, y=1.02, loc='left')
-            ax3.set_title('({}.iii)'.format(letter), fontsize=8, x=-0.05, y=0.90, loc='left')
+            ax2.set_title('({}.ii)'.format(letter), fontsize=8, x=-0.05, y=1.02, loc='left')
+            ax3.set_title('({}.iii)'.format(letter), fontsize=8, y=0.90, loc='left')
 
             ax2.set_theta_direction(-1)
             ax2.set_theta_zero_location('N')
