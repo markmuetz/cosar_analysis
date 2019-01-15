@@ -95,7 +95,7 @@ class ShearProfilePlot(Analyser):
 
                 # Figures.
                 plotter.figplot_profiles_geog_all()
-                # plotter.figplot_all_RWPs()
+                plotter.figplot_all_RWPs()
                 plotter.figplot_hodo_wind_rose_geog_loc()
                 plotter.figplot_RWP_temporal_histograms()
                 break
