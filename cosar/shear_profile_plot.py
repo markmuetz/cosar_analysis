@@ -76,11 +76,11 @@ class ShearProfilePlot(Analyser):
 
     def display_results(self):
         # Figures.
-        # FigPlotter.figplot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
+        FigPlotter.figplot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
 
         # Extras.
-        # FigPlotter.display_veering_backing(self.u, self.v, self)
-        # FigPlotter.plot_scores(self.scores, self)
+        FigPlotter.display_veering_backing(self.u, self.v, self)
+        FigPlotter.plot_scores(self.scores, self)
 
         for n_clusters in self.settings.CLUSTERS:
             # N.B. loop not nec., but might be useful in future if some figs for each
@@ -98,7 +98,6 @@ class ShearProfilePlot(Analyser):
                 plotter.figplot_all_RWPs()
                 plotter.figplot_hodo_wind_rose_geog_loc()
                 plotter.figplot_RWP_temporal_histograms()
-                break
 
                 if seed == seeds[0]:
                     # Extras. These are quite time consuming to run, and I don't need to do
