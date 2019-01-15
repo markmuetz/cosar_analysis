@@ -180,7 +180,7 @@ class FigPlotter:
         fig = plt.figure(figsize=(cm_to_inch(17, 20)))
         fig.subplots_adjust(top=0.95, bottom=0.1, left=0.098, right=0.92, hspace=0., wspace=0.05)
         gs = gridspec.GridSpec(len(clusters_to_disp), 3, width_ratios=[0.9, .4, 4])
-        colorbar_ax = fig.add_axes([0.42, 0.07, 0.4, 0.02])
+        colorbar_ax = fig.add_axes([0.42, 0.06, 0.4, 0.01])
         axes1 = []
         axes2 = []
         axes3 = []
