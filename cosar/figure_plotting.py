@@ -180,7 +180,7 @@ class FigPlotter:
         fig = plt.figure(figsize=(cm_to_inch(17, 20)))
         fig.subplots_adjust(top=0.95, bottom=0.1, left=0.098, right=0.92, hspace=0., wspace=0.05)
         gs = gridspec.GridSpec(len(clusters_to_disp), 3, width_ratios=[0.9, .4, 4])
-        colorbar_ax = fig.add_axes([0.42, 0.05, 0.4, 0.01])
+        colorbar_ax = fig.add_axes([0.42, 0.07, 0.4, 0.02])
         axes1 = []
         axes2 = []
         axes3 = []
@@ -204,7 +204,7 @@ class FigPlotter:
             ax3 = axes3[ax_index]
 
             ax1.set_title('({}.i)'.format(letter), fontsize=8, y=0.90, loc='left')
-            ax2.set_title('({}.ii)'.format(letter), fontsize=8, x=-0.07, y=1.02, loc='left')
+            ax2.set_title('({}.ii)'.format(letter), fontsize=8, x=-0.09, y=1.02, loc='left')
             ax3.set_title('({}.iii)'.format(letter), fontsize=8, y=0.90, loc='left')
 
             ax2.set_theta_direction(-1)
