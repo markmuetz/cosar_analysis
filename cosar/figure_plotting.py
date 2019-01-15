@@ -210,7 +210,7 @@ class FigPlotter:
             ax2.set_theta_direction(-1)
             ax2.set_theta_zero_location('N')
             ax2.set_xticklabels([])
-            ax2.set_yticklabels(['50 %'])
+            ax2.set_yticklabels(['50%'])
             ax2.tick_params(axis='y', which='major', labelsize=8)
             # ax2.set_rlabel_position(90)
 
