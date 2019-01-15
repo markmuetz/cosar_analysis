@@ -167,7 +167,7 @@ class FigPlotter:
 
         cbar = plt.colorbar(img, cax=colorbar_ax, cmap=self.hist_cmap, orientation='horizontal')
         cbar.set_clim(1, self.full_hist.max())
-        cbar.set_label('number of profiles')
+        cbar.set_label('number of profiles', labelpad=-10)
 
         plt.savefig(self._file_path(title) + '.pdf')
 
