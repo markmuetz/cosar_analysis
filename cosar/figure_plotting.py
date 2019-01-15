@@ -204,7 +204,7 @@ class FigPlotter:
             ax3 = axes3[ax_index]
 
             ax1.set_title('({}.i)'.format(letter), fontsize=8, y=0.90, loc='left')
-            ax2.set_title('({}.ii)'.format(letter), fontsize=8, x=-0.05, y=1.02, loc='left')
+            ax2.set_title('({}.ii)'.format(letter), fontsize=8, x=-0.07, y=1.02, loc='left')
             ax3.set_title('({}.iii)'.format(letter), fontsize=8, y=0.90, loc='left')
 
             ax2.set_theta_direction(-1)
@@ -212,7 +212,7 @@ class FigPlotter:
             ax2.set_xticklabels([])
             ax2.set_yticklabels(['50%'])
             ax2.tick_params(axis='y', which='major', labelsize=8)
-            ax2.set_rlabel_position(0)
+            ax2.set_rlabel_position(15)
             # ax2.set_rlabel_position(90)
 
             wind_rose_bins = np.linspace(-np.pi, np.pi, 9)
