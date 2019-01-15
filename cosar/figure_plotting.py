@@ -163,11 +163,10 @@ class FigPlotter:
         title_fmt = 'PROFILES_GEOG_ALL_seed-{}_npca-{}_nclust-{}'
         title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
 
-        colorbar_ax = fig.add_axes([0.11, 0.14, 0.8, 0.02])
+        colorbar_ax = fig.add_axes([0.11, 0.17, 0.8, 0.02])
         cbar = plt.colorbar(img, cax=colorbar_ax, cmap=self.hist_cmap, orientation='horizontal')
         cbar.set_clim(1, self.full_hist.max())
         cbar.set_label('number of profiles')
-        plt.tight_layout()
 
         plt.savefig(self._file_path(title) + '.pdf')
 
