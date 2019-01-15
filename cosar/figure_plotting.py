@@ -143,7 +143,8 @@ class FigPlotter:
     def figplot_profiles_geog_all(self):
         """Key figure: for all filtered profiles, plot a geographical profile heatmap."""
         fig = plt.figure(figsize=cm_to_inch(15, 4))
-        ax = fig.add_axes([0.11, 0.20, 0.8, 0.8], projection=ccrs.PlateCarree())
+        ax = fig.add_axes([0.11, 0.24, 0.8, 0.8], projection=ccrs.PlateCarree())
+        colorbar_ax = fig.add_axes([0.11, 0.21, 0.8, 0.02])
         # ax = plt.axes(projection=ccrs.PlateCarree())
         ax.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
         ax.yaxis.tick_right()
@@ -164,7 +165,6 @@ class FigPlotter:
         title_fmt = 'PROFILES_GEOG_ALL_seed-{}_npca-{}_nclust-{}'
         title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
 
-        colorbar_ax = fig.add_axes([0.11, 0.17, 0.8, 0.02])
         cbar = plt.colorbar(img, cax=colorbar_ax, cmap=self.hist_cmap, orientation='horizontal')
         cbar.set_clim(1, self.full_hist.max())
         cbar.set_label('number of profiles')
