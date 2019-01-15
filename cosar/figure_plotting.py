@@ -143,7 +143,8 @@ class FigPlotter:
     def figplot_profiles_geog_all(self):
         """Key figure: for all filtered profiles, plot a geographical profile heatmap."""
         fig = plt.figure(figsize=cm_to_inch(15, 4))
-        ax = plt.axes(projection=ccrs.PlateCarree())
+        ax = fig.add_axes([0.11, 0.20, 0.8, 0.8], projection=ccrs.PlateCarree())
+        # ax = plt.axes(projection=ccrs.PlateCarree())
         ax.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
         ax.yaxis.tick_right()
 
