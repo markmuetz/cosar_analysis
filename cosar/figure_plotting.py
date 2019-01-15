@@ -211,7 +211,7 @@ class FigPlotter:
             ax2.set_theta_zero_location('N')
             ax2.set_xticklabels([])
             ax2.set_yticklabels(['50 %'])
-            plot.tick_params(axis='y', which='major', labelsize=6)
+            ax2.tick_params(axis='y', which='major', labelsize=6)
             # ax2.set_rlabel_position(90)
 
             wind_rose_bins = np.linspace(-np.pi, np.pi, 9)
