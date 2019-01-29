@@ -16,6 +16,21 @@ from omnium.utils import cm_to_inch
 
 logger = getLogger('cosar.spca')
 
+def max_wind_diff_between_levels(u_rwp, v_rwp, start_level, end_level, pressure):
+    max_wind_diff, max_i, max_j = 0, 0, 0
+    # i is lower (higher pressure).
+    for i in range(start_level, end_level, -1):
+        for j in range(i - 1, end_level - 1, -1):
+            wind_diff = np.sqrt((u_rwp[i] - u_rwp[j])**2 +
+                                (v_rwp[i] - v_rwp[j])**2)
+            logger.debug('diff {} - {} hPa: {}',
+                         pressure[i], pressure[j], wind_diff)
+            if wind_diff > max_wind_diff:
+                max_wind_diff = wind_diff
+                max_i, max_j = i, j
+    return max_wind_diff, max_i, max_j
+
+
 
 def dist_from_rwp(u_rwp, v_rwp, u, v):
     """Calculate the distance of given profiles from an RWP."""
@@ -879,3 +894,58 @@ class FigPlotter:
             ax.set_ylim((self.pressure.max(), self.pressure.min()))
             ax.set_xticks([-20, 0, 20])
             plt.savefig(self._file_path(title) + '.pdf')
+
+    def calc_max_low_mid_wind_diff(self):
+        """Calculate the max shear between any 2 levels for low (1000 - 800) and mid (800 - 500)"""
+        wind_diff_rows = ['cluster,low [ms-1],low_bot [hPa],low_top [hPa],'
+                          'mid [ms-1],mid_bot [hPa],mid_top [hPa]']
+        for cluster_index in range(self.n_clusters):
+            keep = self.labels == cluster_index
+
+            u = self.all_u[keep]
+            v = self.all_v[keep]
+
+            u_median = np.percentile(u, 50, axis=0)
+            v_median = np.percentile(v, 50, axis=0)
+
+            index1000hPa = 19
+            index800hPa = 15
+            index500hPa = 9
+
+            # Check I've got correct pressures.
+            assert np.isclose(self.pressure[index1000hPa], 1000)
+            assert np.isclose(self.pressure[index800hPa], 800)
+            assert np.isclose(self.pressure[index500hPa], 500)
+
+            logger.info('C{}: range: {} - {} hPa',
+                        cluster_index + 1, self.pressure[index1000hPa], self.pressure[index800hPa])
+
+            # Low wind diff.
+            max_low_wind_diff, low_i, low_j = max_wind_diff_between_levels(u_median, v_median,
+                                                                           index1000hPa,
+                                                                           index800hPa,
+                                                                            self.pressure)
+
+            logger.info('C{}: Max low-level wind diff: {} ms-1',
+                        cluster_index + 1, max_low_wind_diff)
+            logger.info('C{}: Between: {} - {} hPa',
+                        cluster_index + 1, self.pressure[low_i], self.pressure[low_j])
+
+            # Mid wind diff.
+            logger.info('C{}: range: {} - {} hPa',
+                         cluster_index + 1, self.pressure[index800hPa], self.pressure[index500hPa])
+            max_mid_wind_diff, mid_i, mid_j = max_wind_diff_between_levels(u_median, v_median,
+                                                                           index800hPa,
+                                                                           index500hPa,
+                                                                           self.pressure)
+
+            logger.info('C{}: Max mid-level wind diff: {} ms-1',
+                        cluster_index + 1, max_mid_wind_diff)
+            logger.info('C{}: Between: {} - {} hPa',
+                        cluster_index + 1, self.pressure[mid_i], self.pressure[mid_j])
+            wind_diff_rows.append('{},{},{},{},{},{},{}'.format(
+                cluster_index + 1,
+                max_low_wind_diff, self.pressure[low_i], self.pressure[low_j],
+                max_mid_wind_diff, self.pressure[mid_i], self.pressure[mid_j]))
+
+        self.analyser.save_text('max_wind_diffs.csv', '\n'.join(wind_diff_rows) + '\n')

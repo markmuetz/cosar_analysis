@@ -111,3 +111,4 @@ class ShearProfilePlot(Analyser):
                     plotter.plot_profiles_seasonal_geog_loc()
                     plotter.plot_nearest_furthest_profiles()
                     plotter.plot_pca_red()
+                    plotter.calc_max_low_mid_wind_diff()
