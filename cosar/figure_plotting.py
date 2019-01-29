@@ -127,6 +127,8 @@ class FigPlotter:
         # self._cluster_index_map is written when working out max_low_wind_diff,
         # Uses that to order them. N.B. it would've been nice to have some way of ordering
         # them from the start.
+        # TODO: Need to return 0-9 along with this, then use the correct one
+        # TODO: i.e. use 0-9 for labels (C1-10), and perhaps indexing axes.
         return self._cluster_index_map[[1, 8, 0, 4, 5, 9, 6, 2, 3, 7]]
 
     def _calc_max_low_mid_wind_diff(self):
