@@ -68,6 +68,7 @@ class FigPlotter:
         self.all_v = self.analyser.all_v
 
         self.full_hist, self.full_lat, self.full_lon = self._calc_full_hist()
+        self._calc_max_low_mid_wind_diff()
         self.hists_lat_lon, self.nprof = self._calc_cluster_hists()
 
     def _calc_full_hist(self):
@@ -82,7 +83,7 @@ class FigPlotter:
         hists_lat_lon = []
         nprof = []
 
-        for cluster_index in list(range(self.n_clusters)):
+        for cluster_index in self._cluster_indices():
             keep = self.labels == cluster_index
             # Get original samples based on how they've been classified.
             cluster_lat = self.all_lat[keep]
@@ -117,6 +118,80 @@ class FigPlotter:
     def _file_path(self, title):
         """Useful wrapper"""
         return self.analyser.file_path(title)
+
+    def _cluster_indices(self):
+        """Re-order clusters to match previously written results."""
+        # Some small change to the python libs I'm using has caused the order to change.
+        # This re-orders clusters so that they are in the same order they were in when I wrote
+        # e.g. Draft 2 of the paper.
+        # self._cluster_index_map is written when working out max_low_wind_diff,
+        # Uses that to order them. N.B. it would've been nice to have some way of ordering
+        # them from the start.
+        return self._cluster_index_map[[1, 8, 0, 4, 5, 9, 6, 2, 3, 7]]
+
+    def _calc_max_low_mid_wind_diff(self):
+        """Calculate the max shear between any 2 levels for low (1000 - 800) and mid (800 - 500)"""
+        wind_diff_rows = []
+        max_low_wind_diffs = []
+        for cluster_index in range(self.n_clusters):
+            keep = self.labels == cluster_index
+
+            u = self.all_u[keep]
+            v = self.all_v[keep]
+
+            u_median = np.percentile(u, 50, axis=0)
+            v_median = np.percentile(v, 50, axis=0)
+
+            index1000hPa = 19
+            index800hPa = 15
+            index500hPa = 9
+
+            # Check I've got correct pressures.
+            assert np.isclose(self.pressure[index1000hPa], 1000)
+            assert np.isclose(self.pressure[index800hPa], 800)
+            assert np.isclose(self.pressure[index500hPa], 500)
+
+            logger.info('C{}: range: {} - {} hPa',
+                        cluster_index + 1, self.pressure[index1000hPa], self.pressure[index800hPa])
+
+            # Low wind diff.
+            max_low_wind_diff, low_i, low_j = max_wind_diff_between_levels(u_median, v_median,
+                                                                           index1000hPa,
+                                                                           index800hPa,
+                                                                           self.pressure)
+
+            logger.info('C{}: Max low-level wind diff: {} ms-1',
+                        cluster_index + 1, max_low_wind_diff)
+            logger.info('C{}: Between: {} - {} hPa',
+                        cluster_index + 1, self.pressure[low_i], self.pressure[low_j])
+
+            # Mid wind diff.
+            logger.info('C{}: range: {} - {} hPa',
+                        cluster_index + 1, self.pressure[index800hPa], self.pressure[index500hPa])
+            max_mid_wind_diff, mid_i, mid_j = max_wind_diff_between_levels(u_median, v_median,
+                                                                           index800hPa,
+                                                                           index500hPa,
+                                                                           self.pressure)
+
+            logger.info('C{}: Max mid-level wind diff: {} ms-1',
+                        cluster_index + 1, max_mid_wind_diff)
+            logger.info('C{}: Between: {} - {} hPa',
+                        cluster_index + 1, self.pressure[mid_i], self.pressure[mid_j])
+            wind_diff_rows.append('{},{},{},{},{},{},{}'.format(
+                cluster_index + 1,
+                max_low_wind_diff, self.pressure[low_i], self.pressure[low_j],
+                max_mid_wind_diff, self.pressure[mid_i], self.pressure[mid_j]))
+            max_low_wind_diffs.append(max_low_wind_diff)
+
+        self._cluster_index_map = np.argsort(max_low_wind_diffs)
+
+        wind_diff_rows_output = ['cluster,low [ms-1],low_bot [hPa],low_top [hPa],'
+                                 'mid [ms-1],mid_bot [hPa],mid_top [hPa]']
+
+        for cluster_index in self._cluster_indices():
+            wind_diff_rows_output.append(wind_diff_rows[cluster_index])
+
+        self.analyser.save_text('max_wind_diffs.csv', '\n'.join(wind_diff_rows_output) + '\n')
 
     @staticmethod
     def figplot_n_pca_profiles(pca_components, n, analyser):
@@ -188,7 +263,7 @@ class FigPlotter:
 
     def figplot_hodo_wind_rose_geog_loc(self):
         """Key figure: 3x10 grid (if 10 clusters) of hodo, wind rose distn, heatmap"""
-        clusters_to_disp = list(range(self.n_clusters))
+        clusters_to_disp = self._cluster_indices()
 
         title_fmt = 'PROFILES_GEOG_LOC_seed-{}_npca-{}_nclust-{}'
         title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
@@ -334,7 +409,7 @@ class FigPlotter:
         # [3, 1], the one with the hidden axis below it.
         fig, axes = plt.subplots(2, 5, sharey=True, figsize=cm_to_inch(17, 14))
 
-        for cluster_index in range(self.n_clusters):
+        for cluster_index in self._cluster_indices():
             ax = axes.flatten()[cluster_index]
 
             keep = self.labels == cluster_index
@@ -511,7 +586,7 @@ class FigPlotter:
         abs_max = max(np.abs([self.all_u.min(), self.all_u.max(),
                               self.all_v.min(), self.all_v.max()]))
 
-        for cluster_index in range(self.n_clusters):
+        for cluster_index in self._cluster_indices():
             keep = self.labels == cluster_index
 
             u = self.all_u[keep]
@@ -576,7 +651,7 @@ class FigPlotter:
                                     ('jja', self.analyser.jja)]:
             logger.debug('running geog loc for {}', season_name)
 
-            clusters_to_disp = list(range(self.n_clusters))
+            clusters_to_disp = self._cluster_indices()
 
             fig = plt.figure(figsize=(7, 11))
             fig.subplots_adjust(bottom=0.15)
@@ -742,7 +817,7 @@ class FigPlotter:
         """Plot individual wind roses, really superseded by plot_hodo_wind_rose_geog_loc."""
         rot_at_level = self.analyser.df_norm['rot_at_level']
 
-        for cluster_index in range(self.n_clusters):
+        for cluster_index in self._cluster_indices():
             title_fmt = 'WIND_ROSE_HIST_ci-{}_seed-{}_npca-{}_nclust-{}'
             title = title_fmt.format(self.seed, cluster_index, self.n_pca_components, self.n_clusters)
             keep = self.labels == cluster_index
@@ -765,7 +840,7 @@ class FigPlotter:
     def plot_geog_loc(self):
         """Plot geog loc for each RWP, superseded by plot_hodo_wind_rose_geog_loc."""
 
-        for cluster_index in range(self.n_clusters):
+        for cluster_index in self._cluster_indices():
             title_fmt = 'GLOB_GEOG_LOC_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
                                      cluster_index, self.nprof[cluster_index])
@@ -809,7 +884,7 @@ class FigPlotter:
 
     def plot_nearest_furthest_profiles(self):
         """For each RWP, plot the nearest, furthest and median profiles that belong to that RWP."""
-        for cluster_index in range(self.n_clusters):
+        for cluster_index in self._cluster_indices():
             keep = self.labels == cluster_index
 
             u = self.all_u[keep]
@@ -894,58 +969,3 @@ class FigPlotter:
             ax.set_ylim((self.pressure.max(), self.pressure.min()))
             ax.set_xticks([-20, 0, 20])
             plt.savefig(self._file_path(title) + '.pdf')
-
-    def calc_max_low_mid_wind_diff(self):
-        """Calculate the max shear between any 2 levels for low (1000 - 800) and mid (800 - 500)"""
-        wind_diff_rows = ['cluster,low [ms-1],low_bot [hPa],low_top [hPa],'
-                          'mid [ms-1],mid_bot [hPa],mid_top [hPa]']
-        for cluster_index in range(self.n_clusters):
-            keep = self.labels == cluster_index
-
-            u = self.all_u[keep]
-            v = self.all_v[keep]
-
-            u_median = np.percentile(u, 50, axis=0)
-            v_median = np.percentile(v, 50, axis=0)
-
-            index1000hPa = 19
-            index800hPa = 15
-            index500hPa = 9
-
-            # Check I've got correct pressures.
-            assert np.isclose(self.pressure[index1000hPa], 1000)
-            assert np.isclose(self.pressure[index800hPa], 800)
-            assert np.isclose(self.pressure[index500hPa], 500)
-
-            logger.info('C{}: range: {} - {} hPa',
-                        cluster_index + 1, self.pressure[index1000hPa], self.pressure[index800hPa])
-
-            # Low wind diff.
-            max_low_wind_diff, low_i, low_j = max_wind_diff_between_levels(u_median, v_median,
-                                                                           index1000hPa,
-                                                                           index800hPa,
-                                                                            self.pressure)
-
-            logger.info('C{}: Max low-level wind diff: {} ms-1',
-                        cluster_index + 1, max_low_wind_diff)
-            logger.info('C{}: Between: {} - {} hPa',
-                        cluster_index + 1, self.pressure[low_i], self.pressure[low_j])
-
-            # Mid wind diff.
-            logger.info('C{}: range: {} - {} hPa',
-                         cluster_index + 1, self.pressure[index800hPa], self.pressure[index500hPa])
-            max_mid_wind_diff, mid_i, mid_j = max_wind_diff_between_levels(u_median, v_median,
-                                                                           index800hPa,
-                                                                           index500hPa,
-                                                                           self.pressure)
-
-            logger.info('C{}: Max mid-level wind diff: {} ms-1',
-                        cluster_index + 1, max_mid_wind_diff)
-            logger.info('C{}: Between: {} - {} hPa',
-                        cluster_index + 1, self.pressure[mid_i], self.pressure[mid_j])
-            wind_diff_rows.append('{},{},{},{},{},{},{}'.format(
-                cluster_index + 1,
-                max_low_wind_diff, self.pressure[low_i], self.pressure[low_j],
-                max_mid_wind_diff, self.pressure[mid_i], self.pressure[mid_j]))
-
-        self.analyser.save_text('max_wind_diffs.csv', '\n'.join(wind_diff_rows) + '\n')
