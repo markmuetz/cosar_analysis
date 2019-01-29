@@ -83,6 +83,7 @@ class FigPlotter:
         hists_lat_lon = []
         nprof = []
 
+        # TODO: Check logic here.
         for cluster_index in self._cluster_indices():
             keep = self.labels == cluster_index
             # Get original samples based on how they've been classified.
@@ -127,9 +128,9 @@ class FigPlotter:
         # self._cluster_index_map is written when working out max_low_wind_diff,
         # Uses that to order them. N.B. it would've been nice to have some way of ordering
         # them from the start.
-        # TODO: Need to return 0-9 along with this, then use the correct one
-        # TODO: i.e. use 0-9 for labels (C1-10), and perhaps indexing axes.
-        return self._cluster_index_map[[1, 8, 0, 4, 5, 9, 6, 2, 3, 7]]
+        # TODO: make sure to re-instate next line.
+        return self._cluster_index_map[::-1]
+        # return self._cluster_index_map[[1, 8, 0, 4, 5, 9, 6, 2, 3, 7]]
 
     def _calc_max_low_mid_wind_diff(self):
         """Calculate the max shear between any 2 levels for low (1000 - 800) and mid (800 - 500)"""
@@ -179,7 +180,7 @@ class FigPlotter:
                         cluster_index + 1, max_mid_wind_diff)
             logger.info('C{}: Between: {} - {} hPa',
                         cluster_index + 1, self.pressure[mid_i], self.pressure[mid_j])
-            wind_diff_rows.append('{},{},{},{},{},{},{}'.format(
+            wind_diff_rows.append((
                 cluster_index + 1,
                 max_low_wind_diff, self.pressure[low_i], self.pressure[low_j],
                 max_mid_wind_diff, self.pressure[mid_i], self.pressure[mid_j]))
@@ -191,7 +192,8 @@ class FigPlotter:
                                  'mid [ms-1],mid_bot [hPa],mid_top [hPa]']
 
         for cluster_index in self._cluster_indices():
-            wind_diff_rows_output.append(wind_diff_rows[cluster_index])
+            wind_diff_rows_output.append('{},{},{},{},{},{},{}'
+                                         .format(*wind_diff_rows[cluster_index]))
 
         self.analyser.save_text('max_wind_diffs.csv', '\n'.join(wind_diff_rows_output) + '\n')
 
@@ -411,8 +413,8 @@ class FigPlotter:
         # [3, 1], the one with the hidden axis below it.
         fig, axes = plt.subplots(2, 5, sharey=True, figsize=cm_to_inch(17, 14))
 
-        for cluster_index in self._cluster_indices():
-            ax = axes.flatten()[cluster_index]
+        for cluster_label, cluster_index in enumerate(self._cluster_indices()):
+            ax = axes.flatten()[cluster_label]
 
             keep = self.labels == cluster_index
 
@@ -437,21 +439,21 @@ class FigPlotter:
             ax.set_xticks([-20, 0, 20])
 
             # Set no ticks for top row.
-            if cluster_index in [0, 1, 2, 3, 4]:
+            if cluster_label in [0, 1, 2, 3, 4]:
                 plt.setp(ax.get_xticklabels(), visible=False)
 
-            if cluster_index in [7]:
+            if cluster_label in [7]:
                 ax.set_xlabel('wind speed (m s$^{-1}$)')
 
-            if cluster_index in [5]:
+            if cluster_label in [5]:
                 # HACK: This is a hacky way to position a label!
                 ax.set_ylabel(' ' * 50 + 'pressure (hPa)')
-            ax.text(0.05, 0.1, 'C{}'.format(cluster_index + 1),
+            ax.text(0.05, 0.1, 'C{}'.format(cluster_label + 1),
                     verticalalignment='bottom', horizontalalignment='left',
                     transform=ax.transAxes,
                     color='black', fontsize=10)
-            ax.set_title('({})'.format(FigPlotter.letters[cluster_index]), fontsize=10, loc='left')
-            if cluster_index == 4:
+            ax.set_title('({})'.format(FigPlotter.letters[cluster_label]), fontsize=10, loc='left')
+            if cluster_label == 4:
                 ax.legend(loc=[0.76, -0.19], fontsize=8)
 
         # Profile u/v plots.
@@ -588,7 +590,7 @@ class FigPlotter:
         abs_max = max(np.abs([self.all_u.min(), self.all_u.max(),
                               self.all_v.min(), self.all_v.max()]))
 
-        for cluster_index in self._cluster_indices():
+        for cluster_label, cluster_index in enumerate(self._cluster_indices()):
             keep = self.labels == cluster_index
 
             u = self.all_u[keep]
@@ -600,7 +602,7 @@ class FigPlotter:
             # Profile u/v plots.
             title_fmt = 'PROFILES_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
-                                     cluster_index, keep.sum())
+                                     cluster_label, keep.sum())
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -623,7 +625,7 @@ class FigPlotter:
             # Profile hodographs.
             title_fmt = 'HODO_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
-                                     cluster_index, keep.sum())
+                                     cluster_label, keep.sum())
             plt.figure(title)
             plt.clf()
             plt.title(title)
@@ -678,11 +680,11 @@ class FigPlotter:
 
             xy_pos_map = {}
 
-            for ax_index, cluster_index in enumerate(clusters_to_disp):
+            for cluster_label, cluster_index in enumerate(clusters_to_disp):
                 keep = self.labels == cluster_index
 
-                ax1 = axes1[ax_index]
-                ax2 = axes2[ax_index]
+                ax1 = axes1[cluster_label]
+                ax2 = axes2[cluster_label]
 
                 u = self.all_u[keep]
                 v = self.all_v[keep]
@@ -692,7 +694,7 @@ class FigPlotter:
 
                 ax1.plot(u_median, v_median, 'k-')
 
-                ax1.text(0.05, 0.01, 'C{}'.format(cluster_index + 1),
+                ax1.text(0.05, 0.01, 'C{}'.format(cluster_label + 1),
                          verticalalignment='bottom', horizontalalignment='left',
                          transform=ax1.transAxes,
                          color='black', fontsize=15)
@@ -713,7 +715,7 @@ class FigPlotter:
 
                 ax1.set_xlim((-10, 25))
                 ax1.set_ylim((-6, 6))
-                if ax_index == len(clusters_to_disp) // 2:
+                if cluster_label == len(clusters_to_disp) // 2:
                     ax1.set_ylabel('v (m s$^{-1}$)')
 
                 ax2.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
@@ -723,14 +725,14 @@ class FigPlotter:
                 lat_formatter = LatitudeFormatter()
                 ax2.xaxis.set_major_formatter(lon_formatter)
                 ax2.yaxis.set_major_formatter(lat_formatter)
-                if ax_index != len(clusters_to_disp) - 1:
+                if cluster_label != len(clusters_to_disp) - 1:
                     ax1.get_xaxis().set_ticklabels([])
                 else:
                     ax1.set_xlabel('u (m s$^{-1}$)')
                     ax2.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
 
                 ax2.set_extent((-180, 179, -24, 24))
-                hist, lat, lon = hists_lat_lon[ax_index]
+                hist, lat, lon = hists_lat_lon[cluster_label]
 
                 if len(hist) == 1:
                     continue
@@ -819,9 +821,9 @@ class FigPlotter:
         """Plot individual wind roses, really superseded by plot_hodo_wind_rose_geog_loc."""
         rot_at_level = self.analyser.df_norm['rot_at_level']
 
-        for cluster_index in self._cluster_indices():
+        for cluster_label, cluster_index in enumerate(self._cluster_indices()):
             title_fmt = 'WIND_ROSE_HIST_ci-{}_seed-{}_npca-{}_nclust-{}'
-            title = title_fmt.format(self.seed, cluster_index, self.n_pca_components, self.n_clusters)
+            title = title_fmt.format(self.seed, cluster_label, self.n_pca_components, self.n_clusters)
             keep = self.labels == cluster_index
             fig = plt.figure(figsize=(8, 8))
             ax = fig.add_axes([.1, .1, .8, .8], polar=True)
@@ -836,16 +838,16 @@ class FigPlotter:
             # ax.bar(15 * np.pi/8, 10,  np.pi / 4, color='blue')
             for val, ang in zip(hist[0], bin_centres):
                 ax.bar(ang, val / rot_at_level[keep].shape[0] * 100,  np.pi / 4, color='blue')
-            plt.title('C{}'.format(cluster_index + 1))
+            plt.title('C{}'.format(cluster_label + 1))
             plt.savefig(self._file_path(title) + '.pdf')
 
     def plot_geog_loc(self):
         """Plot geog loc for each RWP, superseded by plot_hodo_wind_rose_geog_loc."""
 
-        for cluster_index in self._cluster_indices():
+        for cluster_label, cluster_index in enumerate(self._cluster_indices()):
             title_fmt = 'GLOB_GEOG_LOC_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
-                                     cluster_index, self.nprof[cluster_index])
+                                     cluster_label, self.nprof[cluster_index])
             plt.figure(title)
             plt.clf()
 
@@ -886,7 +888,7 @@ class FigPlotter:
 
     def plot_nearest_furthest_profiles(self):
         """For each RWP, plot the nearest, furthest and median profiles that belong to that RWP."""
-        for cluster_index in self._cluster_indices():
+        for cluster_label, cluster_index in enumerate(self._cluster_indices()):
             keep = self.labels == cluster_index
 
             u = self.all_u[keep]
@@ -900,7 +902,7 @@ class FigPlotter:
 
             title_fmt = 'NEAREST_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
-                                     cluster_index, keep.sum())
+                                     cluster_label, keep.sum())
             plt.figure(title)
             plt.clf()
 
@@ -925,7 +927,7 @@ class FigPlotter:
 
             title_fmt = 'FURTHEST_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
-                                     cluster_index, keep.sum())
+                                     cluster_label, keep.sum())
             plt.figure(title)
             plt.clf()
 
@@ -949,7 +951,7 @@ class FigPlotter:
 
             title_fmt = 'MEDIAN_seed-{}_npca-{}_nclust-{}_ci-{}_nprof-{}'
             title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters,
-                                     cluster_index, keep.sum())
+                                     cluster_label, keep.sum())
             plt.figure(title)
             plt.clf()
 
