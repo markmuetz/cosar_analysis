@@ -1,4 +1,4 @@
-VERSION = (0, 8, 0, 1, 'RC4')
+VERSION = (0, 8, 1, 0, 'RC5')
 
 
 def get_version(form='short'):
