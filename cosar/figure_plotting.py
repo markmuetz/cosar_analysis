@@ -16,22 +16,6 @@ from omnium.utils import cm_to_inch
 
 logger = getLogger('cosar.spca')
 
-def max_wind_diff_between_levels(u_rwp, v_rwp, start_level, end_level, pressure):
-    max_wind_diff, max_i, max_j = 0, 0, 0
-    # i is lower (higher pressure).
-    for i in range(start_level, end_level, -1):
-        for j in range(i - 1, end_level - 1, -1):
-            wind_diff = np.sqrt((u_rwp[i] - u_rwp[j])**2 +
-                                (v_rwp[i] - v_rwp[j])**2)
-            # v. low level debug to check it's doing right thing.
-            # logger.debug('diff {} - {} hPa: {}',
-            #              pressure[i], pressure[j], wind_diff)
-            if wind_diff > max_wind_diff:
-                max_wind_diff = wind_diff
-                max_i, max_j = i, j
-    return max_wind_diff, max_i, max_j
-
-
 
 def dist_from_rwp(u_rwp, v_rwp, u, v):
     """Calculate the distance of given profiles from an RWP."""
@@ -49,8 +33,6 @@ class FigPlotter:
     # matplotlib colourmap to use.
     hist_cmap = 'Reds'
     letters = string.ascii_lowercase
-    # Keep the same ordering of clusters and used in draft2.
-    use_draft2_remap = True
 
     def __init__(self, analyser, settings, n_clusters, seed, n_pca_components):
         logger.info('Plotting results for n_clus, seed: {}, {}', n_clusters, seed)
@@ -62,7 +44,7 @@ class FigPlotter:
 
         # Pick out some data for easy access:
         label_key = 'nc-{}_seed-{}'.format(self.n_clusters, self.seed)
-        self.labels = self.analyser.df_labels[label_key]
+        self.remapped_labels = self.analyser.df_remapped_labels[label_key]
 
         self.pressure = self.analyser.u.coord('pressure').points
         self.all_lat = self.analyser.X_latlon[0]
@@ -71,102 +53,7 @@ class FigPlotter:
         self.all_v = self.analyser.all_v
 
         self.full_hist, self.full_lat, self.full_lon = self._calc_full_hist()
-        self._calc_max_low_mid_wind_diff()
         self.hists_lat_lon, self.nprof = self._calc_cluster_hists()
-
-    def _calc_max_low_mid_wind_diff(self):
-        """Calculate the max shear between any 2 levels for low (1000 - 800) and mid (800 - 500)"""
-        wind_diff_rows = []
-        max_low_wind_diffs = []
-        for cluster_index in range(self.n_clusters):
-            keep = self.labels == cluster_index
-
-            u = self.all_u[keep]
-            v = self.all_v[keep]
-
-            u_median = np.percentile(u, 50, axis=0)
-            v_median = np.percentile(v, 50, axis=0)
-
-            index1000hPa = 19
-            index800hPa = 15
-            index500hPa = 9
-
-            # Check I've got correct pressures.
-            assert np.isclose(self.pressure[index1000hPa], 1000)
-            assert np.isclose(self.pressure[index800hPa], 800)
-            assert np.isclose(self.pressure[index500hPa], 500)
-
-            logger.debug('C{}: range: {} - {} hPa',
-                         cluster_index + 1, self.pressure[index1000hPa], self.pressure[index800hPa])
-
-            # Low wind diff.
-            max_low_wind_diff, low_i, low_j = max_wind_diff_between_levels(u_median, v_median,
-                                                                           index1000hPa,
-                                                                           index800hPa,
-                                                                           self.pressure)
-
-            logger.debug('C{}: Max low-level wind diff: {} ms-1',
-                         cluster_index + 1, max_low_wind_diff)
-            logger.debug('C{}: Between: {} - {} hPa',
-                         cluster_index + 1, self.pressure[low_i], self.pressure[low_j])
-
-            # Mid wind diff.
-            logger.debug('C{}: range: {} - {} hPa',
-                         cluster_index + 1, self.pressure[index800hPa], self.pressure[index500hPa])
-            max_mid_wind_diff, mid_i, mid_j = max_wind_diff_between_levels(u_median, v_median,
-                                                                           index800hPa,
-                                                                           index500hPa,
-                                                                           self.pressure)
-
-            logger.debug('C{}: Max mid-level wind diff: {} ms-1',
-                         cluster_index + 1, max_mid_wind_diff)
-            logger.debug('C{}: Between: {} - {} hPa',
-                         cluster_index + 1, self.pressure[mid_i], self.pressure[mid_j])
-            wind_diff_rows.append((
-                cluster_index + 1,
-                max_low_wind_diff, self.pressure[low_i], self.pressure[low_j],
-                max_mid_wind_diff, self.pressure[mid_i], self.pressure[mid_j]))
-            max_low_wind_diffs.append(max_low_wind_diff)
-
-        self._cluster_index_map = np.argsort(max_low_wind_diffs)
-        # label_map tells you how to go from a new label to an old one.
-        # inv_label_map tells you the order of the new_labels in a way that matches the old ones.
-        inv_label_map = np.argsort(self._remap_labels())
-
-        wind_diff_rows_output = ['remapped cluster,cluster,low [ms-1],low_bot [hPa],low_top [hPa],'
-                                 'mid [ms-1],mid_bot [hPa],mid_top [hPa]']
-
-        for remapped_cluster_index, cluster_index in enumerate(inv_label_map):
-            wind_diff_rows_output.append('{},{},{},{},{},{},{},{}'
-                                         .format(remapped_cluster_index + 1,
-                                                 *wind_diff_rows[cluster_index]))
-
-        title_fmt = 'max_wind_diffs_seed-{}_npca-{}_nclust-{}.csv'
-        title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
-        self.analyser.save_text(title, '\n'.join(wind_diff_rows_output) + '\n')
-
-    def _remap_labels(self):
-        """Remap self.labels to self.remapped_labels to match previously written results."""
-        # Some small change to the python libs I'm using has caused the order to change.
-        # This re-orders clusters so that they are in the same order they were in when I wrote
-        # e.g. Draft 2 of the paper.
-        # self._cluster_index_map is written when working out max_low_wind_diff,
-        # Uses that to order them. N.B. it would've been nice to have some way of ordering
-        # them from the start.
-        if self.use_draft2_remap:
-            # Worked out looking at order of LLS for draft2, i.e. C1 (index 0) had 2nd lowest LLS
-            # C3 (index 2) had lowest...
-            draft2_remap = [1, 8, 0, 4, 5, 9, 6, 2, 3, 7]
-            label_map = np.argsort(self._cluster_index_map[draft2_remap])
-        else:
-            # Ordered in terms of highest low-level shear first.
-            label_map = np.argsort(self._cluster_index_map[::-1])
-
-        logger.info('Remapping labels using: {}', label_map)
-        self.remapped_labels = self.labels.copy()
-        for i in range(len(self.labels)):
-            self.remapped_labels.iloc[i] = label_map[self.labels.iloc[i]]
-        return label_map
 
     def _calc_full_hist(self):
         """Calc full 2D histograms of lat/lons to build up heatmaps where filters apply."""

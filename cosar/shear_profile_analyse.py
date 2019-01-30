@@ -1,4 +1,5 @@
 import os
+import pickle
 from logging import getLogger
 
 import iris
@@ -7,8 +8,25 @@ import numpy as np
 import pandas as pd
 
 from omnium import Analyser
+from omnium.utils import get_cube
 
 logger = getLogger('cosar.spa')
+
+
+def max_wind_diff_between_levels(u_rwp, v_rwp, start_level, end_level, pressure):
+    max_wind_diff, max_i, max_j = 0, 0, 0
+    # i is lower (higher pressure).
+    for i in range(start_level, end_level, -1):
+        for j in range(i - 1, end_level - 1, -1):
+            wind_diff = np.sqrt((u_rwp[i] - u_rwp[j])**2 +
+                                (v_rwp[i] - v_rwp[j])**2)
+            # v. low level debug to check it's doing right thing.
+            # logger.debug('diff {} - {} hPa: {}',
+            #              pressure[i], pressure[j], wind_diff)
+            if wind_diff > max_wind_diff:
+                max_wind_diff = wind_diff
+                max_i, max_j = i, j
+    return max_wind_diff, max_i, max_j
 
 
 class ShearProfileAnalyse(Analyser):
@@ -29,11 +47,18 @@ class ShearProfileAnalyse(Analyser):
         '{input_dir}/profiles_filtered.hdf',
         '{input_dir}/profiles_normalized.hdf',
         '{input_dir}/kmeans_labels.hdf',
+        'share/data/history/{expt}/au197a.pc19880901.nc',
+        '{input_dir}/pca_n_pca_components.pkl',
     ]
     output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = [
         '{output_dir}/denorm_mag.hdf',
-        '{output_dir}/seasonal_info.hdf']
+        '{output_dir}/seasonal_info.hdf',
+        '{output_dir}/remapped_kmeans_labels.hdf',
+    ]
+
+    # Keep the same ordering of clusters and used in draft2.
+    use_draft2_remap = True
 
     def load(self):
         logger.debug('override load')
@@ -46,9 +71,124 @@ class ShearProfileAnalyse(Analyser):
         self.max_mag = df_max_mag.values[:, 0]
         self.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
 
+        self.cubes = iris.load(self.task.filenames[3])
+        self.u = get_cube(self.cubes, 30, 201)
+        self.pressure = self.u.coord('pressure').points
+
+        self.pca, self.n_pca_components = pickle.load(open(self.task.filenames[4], 'rb'))
+
     def run(self):
         self._denorm_samples_magnitude()
         self._seasonal_info()
+
+        n_clusters = self.settings.DETAILED_CLUSTER
+        seeds = self.settings.RANDOM_SEEDS
+
+        self.df_remapped_labels = self.df_labels.copy()
+
+        for seed in seeds:
+            label_key = 'nc-{}_seed-{}'.format(n_clusters, seed)
+            labels = self.df_labels[label_key]
+            self._calc_max_low_mid_wind_diff(label_key, n_clusters, seed, labels)
+
+    def _calc_max_low_mid_wind_diff(self, label_key, n_clusters, seed, labels):
+        """Calculate the max shear between any 2 levels for low (1000 - 800) and mid (800 - 500)"""
+        wind_diff_rows = []
+        max_low_wind_diffs = []
+
+        self.all_u = self.df_denorm_mag.values[:, :self.settings.NUM_PRESSURE_LEVELS]
+        self.all_v = self.df_denorm_mag.values[:, self.settings.NUM_PRESSURE_LEVELS:]
+
+        for cluster_index in range(n_clusters):
+            keep = labels == cluster_index
+
+            u = self.all_u[keep]
+            v = self.all_v[keep]
+
+            u_median = np.percentile(u, 50, axis=0)
+            v_median = np.percentile(v, 50, axis=0)
+
+            index1000hPa = 19
+            index800hPa = 15
+            index500hPa = 9
+
+            # Check I've got correct pressures.
+            assert np.isclose(self.pressure[index1000hPa], 1000)
+            assert np.isclose(self.pressure[index800hPa], 800)
+            assert np.isclose(self.pressure[index500hPa], 500)
+
+            logger.debug('C{}: range: {} - {} hPa',
+                         cluster_index + 1, self.pressure[index1000hPa], self.pressure[index800hPa])
+
+            # Low wind diff.
+            max_low_wind_diff, low_i, low_j = max_wind_diff_between_levels(u_median, v_median,
+                                                                           index1000hPa,
+                                                                           index800hPa,
+                                                                           self.pressure)
+
+            logger.debug('C{}: Max low-level wind diff: {} ms-1',
+                         cluster_index + 1, max_low_wind_diff)
+            logger.debug('C{}: Between: {} - {} hPa',
+                         cluster_index + 1, self.pressure[low_i], self.pressure[low_j])
+
+            # Mid wind diff.
+            logger.debug('C{}: range: {} - {} hPa',
+                         cluster_index + 1, self.pressure[index800hPa], self.pressure[index500hPa])
+            max_mid_wind_diff, mid_i, mid_j = max_wind_diff_between_levels(u_median, v_median,
+                                                                           index800hPa,
+                                                                           index500hPa,
+                                                                           self.pressure)
+
+            logger.debug('C{}: Max mid-level wind diff: {} ms-1',
+                         cluster_index + 1, max_mid_wind_diff)
+            logger.debug('C{}: Between: {} - {} hPa',
+                         cluster_index + 1, self.pressure[mid_i], self.pressure[mid_j])
+            wind_diff_rows.append((
+                cluster_index + 1,
+                max_low_wind_diff, self.pressure[low_i], self.pressure[low_j],
+                max_mid_wind_diff, self.pressure[mid_i], self.pressure[mid_j]))
+            max_low_wind_diffs.append(max_low_wind_diff)
+
+        self._cluster_index_map = np.argsort(max_low_wind_diffs)
+        # label_map tells you how to go from a new label to an old one.
+        # inv_label_map tells you the order of the new_labels in a way that matches the old ones.
+        inv_label_map = np.argsort(self._remap_labels(label_key, labels))
+
+        wind_diff_rows_output = ['remapped cluster,cluster,low [ms-1],low_bot [hPa],low_top [hPa],'
+                                 'mid [ms-1],mid_bot [hPa],mid_top [hPa]']
+
+        for remapped_cluster_index, cluster_index in enumerate(inv_label_map):
+            wind_diff_rows_output.append('{},{},{},{},{},{},{},{}'
+                                         .format(remapped_cluster_index + 1,
+                                                 *wind_diff_rows[cluster_index]))
+
+        title_fmt = 'max_wind_diffs_seed-{}_npca-{}_nclust-{}.csv'
+        title = title_fmt.format(seed, self.n_pca_components, n_clusters)
+        self.save_text(title, '\n'.join(wind_diff_rows_output) + '\n')
+
+    def _remap_labels(self, label_key, labels):
+        """Remap self.labels to self.remapped_labels to match previously written results."""
+        # Some small change to the python libs I'm using has caused the order to change.
+        # This re-orders clusters so that they are in the same order they were in when I wrote
+        # e.g. Draft 2 of the paper.
+        # self._cluster_index_map is written when working out max_low_wind_diff,
+        # Uses that to order them. N.B. it would've been nice to have some way of ordering
+        # them from the start.
+        if self.use_draft2_remap:
+            # Worked out looking at order of LLS for draft2, i.e. C1 (index 0) had 2nd lowest LLS
+            # C3 (index 2) had lowest...
+            draft2_remap = [1, 8, 0, 4, 5, 9, 6, 2, 3, 7]
+            label_map = np.argsort(self._cluster_index_map[draft2_remap])
+        else:
+            # Ordered in terms of highest low-level shear first.
+            label_map = np.argsort(self._cluster_index_map[::-1])
+
+        logger.info('Remapping labels using: {}', label_map)
+        remapped_labels = np.zeros_like(labels.data)
+        for i in range(len(labels)):
+            remapped_labels[i] = label_map[labels.data[i]]
+        self.df_remapped_labels[label_key] = remapped_labels
+        return label_map
 
     def display_results(self):
         loc = self.settings.LOC
@@ -142,7 +282,7 @@ class ShearProfileAnalyse(Analyser):
         with open(path, 'w') as f:
             f.write('RWP, land %, sea %, # prof\n')
             for i in range(10):
-                keep = self.df_labels[label_key].values == i
+                keep = self.df_remapped_labels[label_key].values == i
                 cluster_lat = all_lat[keep]
                 cluster_lon = all_lon[keep]
                 hist, lat, lon = np.histogram2d(cluster_lat, cluster_lon,
@@ -157,3 +297,4 @@ class ShearProfileAnalyse(Analyser):
     def save(self, state=None, suite=None):
         self.df_denorm_mag.to_hdf(self.task.output_filenames[0], 'denorm_mag')
         self.df_seasonal_info.to_hdf(self.task.output_filenames[1], 'seasonal_info')
+        self.df_remapped_labels.to_hdf(self.task.output_filenames[2], 'remapped_kmeans_labels')

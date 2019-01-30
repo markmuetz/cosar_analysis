@@ -26,7 +26,7 @@ class ShearProfilePlot(Analyser):
         '{input_dir}/profiles_filtered.hdf',
         '{input_dir}/profiles_normalized.hdf',
         '{input_dir}/profiles_pca.hdf',
-        '{input_dir}/kmeans_labels.hdf',
+        '{input_dir}/remapped_kmeans_labels.hdf',
         '{input_dir}/pca_n_pca_components.pkl',
         'share/data/history/{expt}/au197a.pc19880901.nc',
         '{input_dir}/scores.np',
@@ -43,7 +43,7 @@ class ShearProfilePlot(Analyser):
         self.df_norm = pd.read_hdf(self.task.filenames[1], 'normalized_profile')
         df_max_mag = pd.read_hdf(self.task.filenames[1], 'max_mag')
         df_pca = pd.read_hdf(self.task.filenames[2])
-        self.df_labels = pd.read_hdf(self.task.filenames[3], 'kmeans_labels')
+        self.df_remapped_labels = pd.read_hdf(self.task.filenames[3], 'remapped_kmeans_labels')
         self.pca, self.n_pca_components = pickle.load(open(self.task.filenames[4], 'rb'))
         self.cubes = iris.load(self.task.filenames[5])
         self.scores = np.load(self.task.filenames[6])
