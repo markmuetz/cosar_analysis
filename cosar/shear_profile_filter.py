@@ -11,7 +11,7 @@ logger = getLogger('cosar.spf')
 CHECK_LAT_LON_CALC = False
 
 
-def _filter(settings, u, v, w, cape,
+def _filter(settings, u, v, cape,
             filter_on=None, t_slice=slice(None), lat_slice=slice(None), lon_slice=slice(None)):
     """Perform filtering as defined by `filter_on` on input fields.
 
@@ -223,10 +223,10 @@ class ShearProfileFilter(Analyser):
     Results are saved as an HDF5 file in `profile_filtered.hdf`.
     """
     analysis_name = 'shear_profile_filter'
-    multi_file = True
+    multi_file = False
     # All paths are relative to the suite-dir, e.g. u-au197.
     input_dir = 'share/data/history/{expt}'
-    input_filename_glob = '{input_dir}/au197a.pc19*.nc'
+    input_filename = '{input_dir}/au197a.pc19880901-19930601.nc'
     output_dir = 'omnium_output/{version_dir}/{expt}'
     output_filenames = ['{output_dir}/profiles_filtered.hdf']
 
@@ -236,7 +236,6 @@ class ShearProfileFilter(Analyser):
     def run(self):
         self.u = get_cube(self.cubes, 30, 201)
         self.v = get_cube(self.cubes, 30, 202)
-        self.w = get_cube(self.cubes, 30, 203)
         # Rem as soon as you hit cube.data it forces a load of all data into mem.
         # So the game is not to use cube.data until there is a small amount of data in the cube.
         logger.info('Cube shape: {}'.format(self.u.shape))
@@ -249,7 +248,7 @@ class ShearProfileFilter(Analyser):
         elif self.settings.LOC == 'SH':
             kwargs = {'lat_slice': self.settings.SH_TROPICS_SLICE}
 
-        dates, u_samples, v_samples, lat, lon = _filter(self.settings, self.u, self.v, self.w,
+        dates, u_samples, v_samples, lat, lon = _filter(self.settings, self.u, self.v,
                                                         self.cape,
                                                         filter_on=self.settings.FILTERS,
                                                         **kwargs)

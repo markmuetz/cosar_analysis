@@ -1,4 +1,5 @@
 from cosar.shear_profile_analyse import ShearProfileAnalyse
+from cosar.shear_profile_extract_fields import ShearProfileExtractFields
 from cosar.shear_profile_filter import ShearProfileFilter
 from cosar.shear_profile_kmeans_cluster import ShearProfileKmeansCluster
 from cosar.shear_profile_normalize import ShearProfileNormalize
@@ -31,6 +32,7 @@ analysis_settings = {
 analysis_settings_filename = 'omnium_output/{version_dir}/settings.json'
 
 analyser_classes = [
+    ShearProfileExtractFields,
     ShearProfileFilter,
     ShearProfileNormalize,
     ShearProfilePca,
