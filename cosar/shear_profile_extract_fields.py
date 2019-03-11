@@ -29,4 +29,6 @@ class ShearProfileExtractFields(Analyser):
 
     def save(self, state=None, suite=None):
         save_cubes = iris.cube.CubeList([self.u, self.v, self.cape])
+        logger.info('Saving cubelist: {}', save_cubes)
+        logger.info('Saving to: {}', self.task.output_filenames[0])
         iris.save(save_cubes, self.task.output_filenames[0], zlib=True)
