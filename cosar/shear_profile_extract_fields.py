@@ -15,28 +15,28 @@ class ShearProfileExtractFields(Analyser):
     multi_file = True
     # All paths are relative to the suite-dir, e.g. u-au197.
     input_dir = 'share/data/history/{expt}'
-    input_filename_glob = '{input_dir}/au197a.pc19*.nc'
+    input_filename_glob = '{input_dir}/au197a.pc19??????.nc'
     output_dir = 'share/data/history/{expt}'
     output_filenames = ['omnium_output/{version_dir}/{expt}/pressures.np',
                         '{output_dir}/au197a.pc19880901.uvcape.nc',
                         '{output_dir}/au197a.pc19881201.uvcape.nc',
-                        '{output_dir}/au197a.pc19890101.uvcape.nc',
+                        '{output_dir}/au197a.pc19890301.uvcape.nc',
                         '{output_dir}/au197a.pc19890601.uvcape.nc',
                         '{output_dir}/au197a.pc19890901.uvcape.nc',
                         '{output_dir}/au197a.pc19891201.uvcape.nc',
-                        '{output_dir}/au197a.pc19900101.uvcape.nc',
+                        '{output_dir}/au197a.pc19900301.uvcape.nc',
                         '{output_dir}/au197a.pc19900601.uvcape.nc',
                         '{output_dir}/au197a.pc19900901.uvcape.nc',
                         '{output_dir}/au197a.pc19901201.uvcape.nc',
-                        '{output_dir}/au197a.pc19910101.uvcape.nc',
+                        '{output_dir}/au197a.pc19910301.uvcape.nc',
                         '{output_dir}/au197a.pc19910601.uvcape.nc',
                         '{output_dir}/au197a.pc19910901.uvcape.nc',
                         '{output_dir}/au197a.pc19911201.uvcape.nc',
-                        '{output_dir}/au197a.pc19920101.uvcape.nc',
+                        '{output_dir}/au197a.pc19920301.uvcape.nc',
                         '{output_dir}/au197a.pc19920601.uvcape.nc',
                         '{output_dir}/au197a.pc19920901.uvcape.nc',
                         '{output_dir}/au197a.pc19921201.uvcape.nc',
-                        '{output_dir}/au197a.pc19930101.uvcape.nc',
+                        '{output_dir}/au197a.pc19930301.uvcape.nc',
                         '{output_dir}/au197a.pc19930601.uvcape.nc',
                         ]
 
