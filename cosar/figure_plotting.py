@@ -46,7 +46,7 @@ class FigPlotter:
         label_key = 'nc-{}_seed-{}'.format(self.n_clusters, self.seed)
         self.remapped_labels = self.analyser.df_remapped_labels[label_key]
 
-        self.pressure = self.analyser.u.coord('pressure').points
+        self.pressure = self.analyser.pressure
         self.all_lat = self.analyser.X_latlon[0]
         self.all_lon = self.analyser.X_latlon[1]
         self.all_u = self.analyser.all_u
@@ -106,7 +106,7 @@ class FigPlotter:
     @staticmethod
     def figplot_n_pca_profiles(pca_components, n, analyser):
         """Key figure: plot the first n PCA profiles."""
-        pressure = analyser.u.coord('pressure').points
+        pressure = analyser.pressure
 
         fig, axes = plt.subplots(1, n, sharey=True, figsize=cm_to_inch(15, 5))
         fig.subplots_adjust(bottom=0.25, wspace=0.3)
@@ -453,6 +453,8 @@ class FigPlotter:
 
     @staticmethod
     def display_veering_backing(u, v, analyser):
+        # No longer used!
+        raise DeprecationWarning('No longer used')
         # TODO: docstring
 
         u950 = u[:, -1]

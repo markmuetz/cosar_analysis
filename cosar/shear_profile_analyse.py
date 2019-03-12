@@ -47,7 +47,7 @@ class ShearProfileAnalyse(Analyser):
         '{input_dir}/profiles_filtered.hdf',
         '{input_dir}/profiles_normalized.hdf',
         '{input_dir}/kmeans_labels.hdf',
-        'share/data/history/{expt}/au197a.pc19880901.nc',
+        '{input_dir}/pressures.np',
         '{input_dir}/pca_n_pca_components.pkl',
     ]
     output_dir = 'omnium_output/{version_dir}/{expt}'
@@ -71,9 +71,7 @@ class ShearProfileAnalyse(Analyser):
         self.max_mag = df_max_mag.values[:, 0]
         self.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
 
-        self.cubes = iris.load(self.task.filenames[3])
-        self.u = get_cube(self.cubes, 30, 201)
-        self.pressure = self.u.coord('pressure').points
+        self.pressure = np.load(self.task.filenames[3])
 
         self.pca, self.n_pca_components = pickle.load(open(self.task.filenames[4], 'rb'))
 

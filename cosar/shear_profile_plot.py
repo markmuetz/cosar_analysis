@@ -28,7 +28,7 @@ class ShearProfilePlot(Analyser):
         '{input_dir}/profiles_pca.hdf',
         '{input_dir}/remapped_kmeans_labels.hdf',
         '{input_dir}/pca_n_pca_components.pkl',
-        'share/data/history/{expt}/au197a.pc19880901.nc',
+        '{input_dir}/pressures.np',
         '{input_dir}/scores.np',
         '{input_dir}/denorm_mag.hdf',
         '{input_dir}/seasonal_info.hdf',
@@ -45,7 +45,7 @@ class ShearProfilePlot(Analyser):
         df_pca = pd.read_hdf(self.task.filenames[2])
         self.df_remapped_labels = pd.read_hdf(self.task.filenames[3], 'remapped_kmeans_labels')
         self.pca, self.n_pca_components = pickle.load(open(self.task.filenames[4], 'rb'))
-        self.cubes = iris.load(self.task.filenames[5])
+        self.pressure = np.load(self.task.filenames[5])
         self.scores = np.load(self.task.filenames[6])
         self.df_denorm_mag = pd.read_hdf(self.task.filenames[7], 'denorm_mag')
         self.df_seasonal_info = pd.read_hdf(self.task.filenames[8], 'seasonal_info')
@@ -54,8 +54,6 @@ class ShearProfilePlot(Analyser):
         self.X = self.df_norm.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.X_pca = df_pca.values[:, :self.settings.NUM_PRESSURE_LEVELS * 2]
         self.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
-        self.u = get_cube(self.cubes, 30, 201)
-        self.v = get_cube(self.cubes, 30, 202)
         self.max_mag = df_max_mag.values[:, 0]
 
         self.all_u = self.df_denorm_mag.values[:, :self.settings.NUM_PRESSURE_LEVELS]
@@ -79,7 +77,6 @@ class ShearProfilePlot(Analyser):
         FigPlotter.figplot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
 
         # Extras.
-        FigPlotter.display_veering_backing(self.u, self.v, self)
         FigPlotter.plot_scores(self.scores, self)
 
         for n_clusters in self.settings.CLUSTERS:
