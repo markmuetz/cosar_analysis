@@ -65,10 +65,10 @@ class ShearProfileExtractFields(Analyser):
 
         pressure = u.coord('pressure').points
         logger.info('Saving pressures: {}', pressure)
-        np.save(self.task.output_filenames[0], pressure)
+        pressure.dump(self.task.output_filenames[0])
 
         for filename, output_filename in zip(self.task.filenames, self.task.output_filenames[1:]):
             logger.info('Saving cubelist: {}', self.output_cubes[filename])
             logger.info('Saving to: {}', output_filename)
-            iris.save(self.output_cubes[filename], output_filename, zlib=True)
+            # iris.save(self.output_cubes[filename], output_filename, zlib=True)
 
