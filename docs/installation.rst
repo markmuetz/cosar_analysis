@@ -22,17 +22,12 @@ Setting up test directory
     omnium version
 
     # Download the directory skeleton
-    wget https://ndownloader.figshare.com/files/13787267?private_link=42910d882025717262b1 -O u-au197_v0.8.0.0.tgz
-    tar xvf u-au197_v0.8.0.0.tgz
-    cd u-au197_v0.8.0.0
+    wget https://ndownloader.figshare.com/files/14570948?private_link=14d6d22c805c4e8a8e4b -O u-au197_skeleton.tgz
+    tar xvf u-au197_skeleton.tgz
+    cd u-au197
 
-    # Initialize the cosar anaisis package
-    omnium suite-init -t run
+    # Initialize the cosar analysis package
     omnium analysis-setup
-
-    # Edit .omnium/suite.conf:
-    # Change to: expt_dataw_dir = work/{cycle_timestamp}/atmos_{expt}
-    $EDITOR .omnium/suite.conf
 
     # Should show cosar analysers
     omnium ls-analysers
