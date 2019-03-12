@@ -21,11 +21,11 @@ Now, you can rerun any step of the analysis. To run the full analysis (bar the f
 
 ::
 
-    omnium run -t expt -a shear_profile_normalize P5Y_DP20
-    omnium run -t expt -a shear_profile_pca P5Y_DP20
-    omnium run -t expt -a shear_profile_kmeans_cluster P5Y_DP20
-    omnium run -t expt -a shear_profile_analyse P5Y_DP20
-    omnium run -t expt -a shear_profile_plot P5Y_DP20
+    omnium run -f -t expt -a shear_profile_normalize P5Y_DP20
+    omnium run -f -t expt -a shear_profile_pca P5Y_DP20
+    omnium run -f -t expt -a shear_profile_kmeans_cluster P5Y_DP20
+    omnium run -f -t expt -a shear_profile_analyse P5Y_DP20
+    omnium run -f -t expt -a shear_profile_plot P5Y_DP20
 
 To display full debug info, start each command with ```omnium -D run```.
 Logs can be seen in the `.omnium/logs/` dir.

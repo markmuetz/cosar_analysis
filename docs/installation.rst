@@ -22,7 +22,7 @@ Setting up test directory
     omnium version
 
     # Download the directory skeleton
-    wget https://ndownloader.figshare.com/files/14570948?private_link=14d6d22c805c4e8a8e4b -O u-au197_skeleton.tgz
+    wget https://ndownloader.figshare.com/files/14571179?private_link=14d6d22c805c4e8a8e4b -O u-au197_skeleton.tgz
     tar xvf u-au197_skeleton.tgz
     cd u-au197
 
