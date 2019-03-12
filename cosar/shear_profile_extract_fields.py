@@ -1,6 +1,6 @@
+import os
 from logging import getLogger
 
-import numpy as np
 import iris
 
 from omnium import Analyser
@@ -68,7 +68,9 @@ class ShearProfileExtractFields(Analyser):
         pressure.dump(self.task.output_filenames[0])
 
         for filename, output_filename in zip(self.task.filenames, self.task.output_filenames[1:]):
-            logger.info('Saving cubelist: {}', self.output_cubes[filename])
-            logger.info('Saving to: {}', output_filename)
-            iris.save(self.output_cubes[filename], output_filename, zlib=True)
-
+            if not os.path.exists(output_filename):
+                logger.info('Saving cubelist: {}', self.output_cubes[filename])
+                logger.info('Saving to: {}', output_filename)
+                iris.save(self.output_cubes[filename], output_filename, zlib=True)
+            else:
+                logger.info('File already exists: {}', output_filename)
