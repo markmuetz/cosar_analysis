@@ -17,7 +17,7 @@ class ShearProfileExtractFields(Analyser):
     input_dir = 'share/data/history/{expt}'
     input_filename_glob = '{input_dir}/au197a.pc19*.nc'
     output_dir = 'share/data/history/{expt}'
-    output_filenames = ['{output_dir}/pressures.np',
+    output_filenames = ['omnium_output/{version_dir}/{expt}/pressures.np',
                         '{output_dir}/au197a.pc19880901.uvcape.nc',
                         '{output_dir}/au197a.pc19881201.uvcape.nc',
                         '{output_dir}/au197a.pc19890101.uvcape.nc',
