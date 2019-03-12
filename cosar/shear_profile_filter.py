@@ -223,7 +223,7 @@ class ShearProfileFilter(Analyser):
     Results are saved as an HDF5 file in `profile_filtered.hdf`.
     """
     analysis_name = 'shear_profile_filter'
-    multi_file = False
+    single_file = True
     # All paths are relative to the suite-dir, e.g. u-au197.
     input_dir = 'share/data/history/{expt}'
     input_filename = '{input_dir}/au197a.pc19880901-19930601.nc'
