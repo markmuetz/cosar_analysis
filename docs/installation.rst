@@ -8,8 +8,8 @@ Installing omnium
     # Instructions for python3 on linux, using anaconda.
     # Assumes you have installed omnium in omnium_env conda env.
     # See omnium installation instructions.
-    # N.B. only tested with v0.11.1 of omnium.
-    # https://github.com/markmuetz/omnium/blob/v0.11.1/docs/installation.rst
+    # N.B. only tested with v0.11.2 of omnium.
+    # https://github.com/markmuetz/omnium/blob/v0.11.2/docs/installation.rst
     # Active conda env.
     source activate omnium_env
 
