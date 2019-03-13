@@ -8,8 +8,13 @@ from omnium.utils import get_cube
 
 logger = getLogger('cosar.spef')
 
+
 class ShearProfileExtractFields(Analyser):
-    """
+    """Extract u, v and CAPE from the UM output au197a.pc*.nc files.
+
+    Each file is around 840M, all are 17G. Can upload to e.g. figshare.
+    Files are compressed netcdf4 files - with complevel 4 (default).
+    Also save the pressures from one of the files (as they don't change) to a numpy array.
     """
     analysis_name = 'shear_profile_extract_fields'
     multi_file = True

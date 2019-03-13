@@ -16,6 +16,7 @@ Omnium is a tool for running analysis in a repeatable way, logging all the actio
 
 cosar_analysis can be run using omnium. cosar_analysis has several steps:
 
+0. Extraction: `shear_profile_extract_field.py`, saves results as `au197a.pc19??????.uvcape.nc`, `pressures.np`
 1. Filtering: `shear_profile_filter.py`, saves results as `profiles_filtered.hdf`
 2. Normalization: `shear_profile_normalize.py`, saves results as `profiles_normalized.hdf`
 3. PCA: `shear_profile_pca.py`, saves results as `profiles_pca.hdf`
