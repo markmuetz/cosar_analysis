@@ -334,11 +334,11 @@ class FigPlotter:
 
             ax.plot(u_median, self.pressure, 'b-', label="u'")
             ax.plot(v_median, self.pressure, 'r-', label="v'")
-            ax.plot(u_p10, self.pressure, 'b:', label="u' 90th")
-            ax.plot(u_p90, self.pressure, 'b:')
+            # ax.plot(u_p10, self.pressure, 'b:', label="u' 90th")
+            # ax.plot(u_p90, self.pressure, 'b:')
 
-            ax.plot(v_p10, self.pressure, 'r:', label="v' 90th")
-            ax.plot(v_p90, self.pressure, 'r:')
+            # ax.plot(v_p10, self.pressure, 'r:', label="v' 90th")
+            # ax.plot(v_p90, self.pressure, 'r:')
 
             ax.set_xlim((-27, 27))
             ax.set_ylim((self.pressure.max(), self.pressure.min()))
@@ -358,14 +358,14 @@ class FigPlotter:
                     verticalalignment='bottom', horizontalalignment='left',
                     transform=ax.transAxes,
                     color='black', fontsize=10)
-            ax.set_title('({})'.format(FigPlotter.letters[cluster_index]), fontsize=10, loc='left')
+            # ax.set_title('({})'.format(FigPlotter.letters[cluster_index]), fontsize=10, loc='left')
             if cluster_index == 4:
                 ax.legend(loc=[0.76, -0.19], fontsize=8)
 
         # Profile u/v plots.
         title_fmt = 'ALL_PROFILES_seed-{}_npca-{}_nclust-{}'
         title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
-        plt.savefig(self._file_path(title) + '.pdf')
+        plt.savefig(self._file_path(title) + '.png')
 
         plt.close("all")
 
