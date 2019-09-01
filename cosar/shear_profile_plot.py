@@ -74,7 +74,7 @@ class ShearProfilePlot(Analyser):
 
     def display_results(self):
         # Figures.
-        FigPlotter.figplot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
+        # FigPlotter.figplot_n_pca_profiles(self.pca.components_, self.n_pca_components, self)
 
         # Extras.
         FigPlotter.plot_scores(self.scores, self)
@@ -91,20 +91,20 @@ class ShearProfilePlot(Analyser):
                 plotter = FigPlotter(self, self.settings, n_clusters, seed, self.n_pca_components)
 
                 # Figures.
-                plotter.figplot_profiles_geog_all()
-                plotter.figplot_all_RWPs()
-                plotter.figplot_hodo_wind_rose_geog_loc()
-                plotter.figplot_RWP_temporal_histograms()
+                # plotter.figplot_profiles_geog_all()
+                # plotter.figplot_all_RWPs()
+                # plotter.figplot_hodo_wind_rose_geog_loc()
+                # plotter.figplot_RWP_temporal_histograms()
 
                 if seed == seeds[0]:
                     # Extras. These are quite time consuming to run, and I don't need to do
                     # seed to seed comparisons on them, so only run for first seed.
-                    plotter.plot_orig_level_hists()
-                    plotter.plot_level_hists()
-                    plotter.plot_profile_results()
-                    plotter.plot_geog_loc()
-                    plotter.plot_cluster_results()
-                    plotter.plot_wind_rose_hists()
+                    # plotter.plot_orig_level_hists()
+                    # plotter.plot_level_hists()
+                    # plotter.plot_profile_results()
+                    # plotter.plot_geog_loc()
+                    # plotter.plot_cluster_results()
+                    # plotter.plot_wind_rose_hists()
                     plotter.plot_profiles_seasonal_geog_loc()
-                    plotter.plot_nearest_furthest_profiles()
-                    plotter.plot_pca_red()
+                    # plotter.plot_nearest_furthest_profiles()
+                    # plotter.plot_pca_red()
