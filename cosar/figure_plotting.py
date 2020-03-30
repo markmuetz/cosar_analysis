@@ -31,7 +31,7 @@ class FigPlotter:
     # [[lat_min, lat_max], [lon_min, lon_max]]
     geog_domain = [[-24, 24], [0, 360]]
     # matplotlib colourmap to use.
-    hist_cmap = 'Reds'
+    hist_cmap = 'hot_r'
     letters = string.ascii_lowercase
 
     def __init__(self, analyser, settings, n_clusters, seed, n_pca_components):
@@ -144,7 +144,7 @@ class FigPlotter:
         """Key figure: for all filtered profiles, plot a geographical profile heatmap."""
         fig = plt.figure(figsize=cm_to_inch(15, 4))
         ax = fig.add_axes([0.11, 0.28, 0.8, 0.8], projection=ccrs.PlateCarree())
-        colorbar_ax = fig.add_axes([0.11, 0.25, 0.8, 0.02])
+        colorbar_ax = fig.add_axes([0.11, 0.25, 0.8, 0.04])
         # ax = plt.axes(projection=ccrs.PlateCarree())
         ax.set_yticks([-24, 0, 24], crs=ccrs.PlateCarree())
         ax.yaxis.tick_right()
@@ -156,16 +156,22 @@ class FigPlotter:
         ax.yaxis.set_major_formatter(lat_formatter)
         ax.set_xticks([-180, -90, 0, 90, 180], crs=ccrs.PlateCarree())
         ax.set_extent((-180, 179, -24, 24))
+        cmap = matplotlib.cm.get_cmap(self.hist_cmap)
+        # cmap.set_bad(cmap(0))
 
         img = ax.pcolormesh(self.full_lon, self.full_lat, self.full_hist,
-                            transform=ccrs.PlateCarree(), cmap=self.hist_cmap,
+                            transform=ccrs.PlateCarree(), cmap=cmap,
                             norm=colors.LogNorm())
+        # img = ax.contourf(self.full_lon, self.full_lat, self.full_hist,
+        #                   transform=ccrs.PlateCarree(), cmap=self.hist_cmap,
+        #                   norm=colors.LogNorm())
         ax.coastlines()
 
         title_fmt = 'PROFILES_GEOG_ALL_seed-{}_npca-{}_nclust-{}'
         title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
 
-        cbar = plt.colorbar(img, cax=colorbar_ax, cmap=self.hist_cmap, orientation='horizontal')
+        cbar = plt.colorbar(img, cax=colorbar_ax, cmap=self.hist_cmap,
+                            orientation='horizontal', extend='min')
         cbar.set_clim(1, self.full_hist.max())
         cbar.set_label('number of profiles', labelpad=-3)
 
@@ -302,7 +308,7 @@ class FigPlotter:
 
         cbar = fig.colorbar(img, cax=colorbar_ax,  # ticks=[0, hist_max],
                             orientation='horizontal',
-                            cmap=self.hist_cmap)
+                            cmap=self.hist_cmap, extend='min')
         cbar.set_clim(1, hist_max)
         cbar.set_label('number of profiles')
 
@@ -332,12 +338,12 @@ class FigPlotter:
 
             ax.set_yticks([1000, 800, 600, 400, 200, 50])
 
-            ax.plot(u_median, self.pressure, 'b-', label="u'")
-            ax.plot(v_median, self.pressure, 'r-', label="v'")
-            ax.plot(u_p10, self.pressure, 'b:', label="u' 90th")
+            ax.plot(u_median, self.pressure, 'b-', label="u' median")
+            ax.plot(v_median, self.pressure, 'r-', label="v' median")
+            ax.plot(u_p10, self.pressure, 'b:', label="u' 10/90th\npercentile")
             ax.plot(u_p90, self.pressure, 'b:')
 
-            ax.plot(v_p10, self.pressure, 'r:', label="v' 90th")
+            ax.plot(v_p10, self.pressure, 'r:', label="v' 10/90th\npercentile")
             ax.plot(v_p90, self.pressure, 'r:')
 
             ax.set_xlim((-27, 27))
@@ -365,6 +371,7 @@ class FigPlotter:
         # Profile u/v plots.
         title_fmt = 'ALL_PROFILES_seed-{}_npca-{}_nclust-{}'
         title = title_fmt.format(self.seed, self.n_pca_components, self.n_clusters)
+        plt.subplots_adjust(right=0.87)
         plt.savefig(self._file_path(title) + '.pdf')
 
         plt.close("all")
