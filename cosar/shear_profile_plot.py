@@ -45,8 +45,8 @@ class ShearProfilePlot(Analyser):
         df_pca = pd.read_hdf(self.task.filenames[2])
         self.df_remapped_labels = pd.read_hdf(self.task.filenames[3], 'remapped_kmeans_labels')
         self.pca, self.n_pca_components = pickle.load(open(self.task.filenames[4], 'rb'))
-        self.pressure = np.load(self.task.filenames[5])
-        self.scores = np.load(self.task.filenames[6])
+        self.pressure = np.load(self.task.filenames[5], allow_pickle=True)
+        self.scores = np.load(self.task.filenames[6], allow_pickle=True)
         self.df_denorm_mag = pd.read_hdf(self.task.filenames[7], 'denorm_mag')
         self.df_seasonal_info = pd.read_hdf(self.task.filenames[8], 'seasonal_info')
 

@@ -71,7 +71,7 @@ class ShearProfileAnalyse(Analyser):
         self.max_mag = df_max_mag.values[:, 0]
         self.X_latlon = (self.df_filtered['lat'].values, self.df_filtered['lon'].values)
 
-        self.pressure = np.load(self.task.filenames[3])
+        self.pressure = np.load(self.task.filenames[3], allow_pickle=True)
 
         self.pca, self.n_pca_components = pickle.load(open(self.task.filenames[4], 'rb'))
 
@@ -182,9 +182,9 @@ class ShearProfileAnalyse(Analyser):
             label_map = np.argsort(self._cluster_index_map[::-1])
 
         logger.info('Remapping labels using: {}', label_map)
-        remapped_labels = np.zeros_like(labels.data)
+        remapped_labels = np.zeros_like(labels.values)
         for i in range(len(labels)):
-            remapped_labels[i] = label_map[labels.data[i]]
+            remapped_labels[i] = label_map[labels.values[i]]
         self.df_remapped_labels[label_key] = remapped_labels
         return label_map
 

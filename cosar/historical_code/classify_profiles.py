@@ -67,7 +67,7 @@ def get_feature_matrix(kwargs):
 
     if os.path.exists('{}_feature_matrix.npy'.format(cache_string)):
         logger.info('Using cached feature matrix')
-        X = np.load('{}_feature_matrix.npy'.format(cache_string))
+        X = np.load('{}_feature_matrix.npy'.format(cache_string), allow_pickle=True)
     else:
         logger.info('Generating feature matrix for {}'.format(kwargs))
         pc = iris.load('ar297a.pc19880901.pp')
